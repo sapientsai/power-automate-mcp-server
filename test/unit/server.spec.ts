@@ -18,9 +18,26 @@ describe("createPowerAutomateServer", () => {
     expect(info.capabilities.tools).toBeGreaterThanOrEqual(1)
   })
 
-  it("registers the list_environments tool", () => {
+  it("registers the full read-only tool set", () => {
     const server = createPowerAutomateServer(config)
     const tools = server.getCapabilities().tools.map((t) => t.name)
-    expect(tools).toContain("list_environments")
+    for (const name of [
+      "list_environments",
+      "list_flows",
+      "get_flow",
+      "list_flow_runs",
+      "get_flow_run",
+      "list_connections",
+      "list_flow_owners",
+    ]) {
+      expect(tools).toContain(name)
+    }
+  })
+
+  it("does not register write tools when ENABLE_WRITE_OPS is unset", () => {
+    const server = createPowerAutomateServer(config)
+    const tools = server.getCapabilities().tools.map((t) => t.name)
+    expect(tools).not.toContain("enable_flow")
+    expect(tools).not.toContain("disable_flow")
   })
 })

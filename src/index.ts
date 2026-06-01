@@ -20,7 +20,11 @@ import {
 import { createTokenManager } from "./auth/token-manager.js"
 import type { ServerConfig } from "./auth/types.js"
 import { createFlowApiBackend } from "./backend/index.js"
+import { registerConnectionTools } from "./tools/connections.js"
 import { registerEnvironmentTools } from "./tools/environments.js"
+import { registerFlowReadTools } from "./tools/flows.js"
+import { registerOwnerReadTools } from "./tools/owners.js"
+import { registerRunReadTools } from "./tools/runs.js"
 import { PKG_VERSION } from "./version.js"
 
 const buildTelemetry = (config: ServerConfig): TelemetryCollector | undefined => {
@@ -78,7 +82,12 @@ export const createPowerAutomateServer = (config: ServerConfig): SomaServerInsta
     authenticate: buildAuthenticate(config),
   })
 
+  const readOpts = { defaultEnvironment: config.defaultEnvironment }
   registerEnvironmentTools(server, backend)
+  registerFlowReadTools(server, backend, readOpts)
+  registerRunReadTools(server, backend, readOpts)
+  registerConnectionTools(server, backend, readOpts)
+  registerOwnerReadTools(server, backend, readOpts)
 
   return server
 }
