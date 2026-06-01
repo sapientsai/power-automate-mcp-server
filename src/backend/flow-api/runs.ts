@@ -85,3 +85,30 @@ export const getRun = async (
     raw: raw.properties,
   }))
 }
+
+// ── Write ─────────────────────────────────────────────────────────────
+
+export const cancelRun = (
+  client: FlowApiClient,
+  env: string,
+  flow: string,
+  run: string,
+): Promise<Either<FlowApiError, unknown>> =>
+  client.request<unknown>(
+    "POST",
+    `/environments/${encodeURIComponent(env)}/flows/${encodeURIComponent(flow)}/runs/${encodeURIComponent(run)}/cancel`,
+  )
+
+export const resubmitRun = (
+  client: FlowApiClient,
+  env: string,
+  flow: string,
+  trigger: string,
+  run: string,
+): Promise<Either<FlowApiError, unknown>> =>
+  client.request<unknown>(
+    "POST",
+    `/environments/${encodeURIComponent(env)}/flows/${encodeURIComponent(flow)}/triggers/${encodeURIComponent(
+      trigger,
+    )}/histories/${encodeURIComponent(run)}/resubmit`,
+  )

@@ -80,3 +80,11 @@ export const getFlow = async (
     }
   })
 }
+
+// ── Write ─────────────────────────────────────────────────────────────
+
+export const enableFlow = (client: FlowApiClient, env: string, flow: string): Promise<Either<FlowApiError, unknown>> =>
+  client.request<unknown>("POST", `/environments/${encodeURIComponent(env)}/flows/${encodeURIComponent(flow)}/start`)
+
+export const disableFlow = (client: FlowApiClient, env: string, flow: string): Promise<Either<FlowApiError, unknown>> =>
+  client.request<unknown>("POST", `/environments/${encodeURIComponent(env)}/flows/${encodeURIComponent(flow)}/stop`)

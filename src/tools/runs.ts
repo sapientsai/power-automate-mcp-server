@@ -7,7 +7,15 @@ import { z } from "zod"
 
 import type { FlowBackend } from "../backend/index.js"
 import { appErrorToThrowable } from "../errors.js"
-import { DISCLAIMER, type ReadToolOptions, renderResult, resolveEnvironment } from "./shared.js"
+import {
+  confirmWrite,
+  DISCLAIMER,
+  ensureWriteEnabled,
+  type ReadToolOptions,
+  renderResult,
+  resolveEnvironment,
+  type WriteToolOptions,
+} from "./shared.js"
 
 const ENV_PARAM = z
   .string()
@@ -65,5 +73,74 @@ export const registerRunReadTools = (
         },
         async (env) => renderResult(await backend.getRun(env, flow, run)),
       ),
+  })
+}
+
+export const registerRunWriteTools = (
+  server: SomaServerInstance,
+  backend: FlowBackend,
+  opts: WriteToolOptions,
+): void => {
+  const gated = opts.enableWrite ? "" : " [DISABLED: set ENABLE_WRITE_OPS=true]"
+
+  server.addTool({
+    name: "cancel_flow_run",
+    description: [
+      `Cancel an in-progress run (POST .../runs/{run}/cancel)${gated}.`,
+      "Parameters: flow (required), run (required), environment (optional).",
+      DISCLAIMER,
+    ].join("\n"),
+    annotations: { destructiveHint: true, title: "Cancel flow run" },
+    parameters: z.object({
+      environment: ENV_PARAM,
+      flow: z.string().describe("Flow GUID name (from list_flows)."),
+      run: z.string().describe("Run id (from list_flow_runs)."),
+    }),
+    execute: async ({ environment, flow, run }) => {
+      ensureWriteEnabled(opts.enableWrite, "cancel_flow_run")
+      return (await resolveEnvironment(backend, opts.defaultEnvironment, environment)).fold(
+        (err) => {
+          throw appErrorToThrowable(err)
+        },
+        async (env) =>
+          (await backend.cancelFlowRun(env, flow, run)).fold(
+            (err) => {
+              throw appErrorToThrowable(err)
+            },
+            () => confirmWrite("cancel_flow_run", { environment: env, flow, run }),
+          ),
+      )
+    },
+  })
+
+  server.addTool({
+    name: "resubmit_flow_run",
+    description: [
+      `Resubmit (replay) a run from its trigger (POST .../triggers/{trigger}/histories/{run}/resubmit)${gated}.`,
+      "Parameters: flow (required), run (required), trigger (required — trigger name from get_flow's triggers), environment (optional).",
+      DISCLAIMER,
+    ].join("\n"),
+    annotations: { destructiveHint: true, title: "Resubmit flow run" },
+    parameters: z.object({
+      environment: ENV_PARAM,
+      flow: z.string().describe("Flow GUID name (from list_flows)."),
+      run: z.string().describe("Run id to resubmit (from list_flow_runs)."),
+      trigger: z.string().describe("Trigger name (from get_flow's `triggers`)."),
+    }),
+    execute: async ({ environment, flow, run, trigger }) => {
+      ensureWriteEnabled(opts.enableWrite, "resubmit_flow_run")
+      return (await resolveEnvironment(backend, opts.defaultEnvironment, environment)).fold(
+        (err) => {
+          throw appErrorToThrowable(err)
+        },
+        async (env) =>
+          (await backend.resubmitFlowRun(env, flow, trigger, run)).fold(
+            (err) => {
+              throw appErrorToThrowable(err)
+            },
+            () => confirmWrite("resubmit_flow_run", { environment: env, flow, run, trigger }),
+          ),
+      )
+    },
   })
 }

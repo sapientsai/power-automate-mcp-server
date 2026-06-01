@@ -17,12 +17,13 @@ import { type FlowApiError, leftFlowApi } from "../errors.js"
 import { createFlowApiClient } from "./flow-api/client.js"
 import { listConnections } from "./flow-api/connections.js"
 import { listEnvironments } from "./flow-api/environments.js"
-import { type FlowFilter, getFlow, listFlows } from "./flow-api/flows.js"
-import { listFlowOwners } from "./flow-api/owners.js"
-import { getRun, listRuns, type RunListOpts } from "./flow-api/runs.js"
+import { disableFlow, enableFlow, type FlowFilter, getFlow, listFlows } from "./flow-api/flows.js"
+import { addFlowOwner, listFlowOwners, type OwnerRole, removeFlowOwner } from "./flow-api/owners.js"
+import { cancelRun, getRun, listRuns, resubmitRun, type RunListOpts } from "./flow-api/runs.js"
 import type { Connection, Environment, FlowDetail, FlowOwner, FlowSummary, RunDetail, RunSummary } from "./types.js"
 
 export type { FlowFilter } from "./flow-api/flows.js"
+export type { OwnerRole } from "./flow-api/owners.js"
 export type { RunListOpts } from "./flow-api/runs.js"
 
 export type FlowBackend = {
@@ -35,6 +36,18 @@ export type FlowBackend = {
   getRun: (env: string, flow: string, run: string) => Promise<Either<FlowApiError, RunDetail>>
   listConnections: (env: string) => Promise<Either<FlowApiError, Connection[]>>
   listFlowOwners: (env: string, flow: string) => Promise<Either<FlowApiError, FlowOwner[]>>
+  // Write — only invoked when ENABLE_WRITE_OPS=true (gated at the tool layer).
+  enableFlow: (env: string, flow: string) => Promise<Either<FlowApiError, unknown>>
+  disableFlow: (env: string, flow: string) => Promise<Either<FlowApiError, unknown>>
+  cancelFlowRun: (env: string, flow: string, run: string) => Promise<Either<FlowApiError, unknown>>
+  resubmitFlowRun: (env: string, flow: string, trigger: string, run: string) => Promise<Either<FlowApiError, unknown>>
+  addFlowOwner: (
+    env: string,
+    flow: string,
+    principalId: string,
+    roleName: OwnerRole,
+  ) => Promise<Either<FlowApiError, unknown>>
+  removeFlowOwner: (env: string, flow: string, principalId: string) => Promise<Either<FlowApiError, unknown>>
 }
 
 export const createFlowApiBackend = (deps: { tokenProvider: TokenProvider }): FlowBackend => {
@@ -55,5 +68,11 @@ export const createFlowApiBackend = (deps: { tokenProvider: TokenProvider }): Fl
     getRun: (env, flow, run) => getRun(client, env, flow, run),
     listConnections: (env) => listConnections(client, env),
     listFlowOwners: (env, flow) => listFlowOwners(client, env, flow),
+    enableFlow: (env, flow) => enableFlow(client, env, flow),
+    disableFlow: (env, flow) => disableFlow(client, env, flow),
+    cancelFlowRun: (env, flow, run) => cancelRun(client, env, flow, run),
+    resubmitFlowRun: (env, flow, trigger, run) => resubmitRun(client, env, flow, trigger, run),
+    addFlowOwner: (env, flow, principalId, roleName) => addFlowOwner(client, env, flow, principalId, roleName),
+    removeFlowOwner: (env, flow, principalId) => removeFlowOwner(client, env, flow, principalId),
   }
 }

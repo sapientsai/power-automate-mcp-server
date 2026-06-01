@@ -34,10 +34,21 @@ describe("createPowerAutomateServer", () => {
     }
   })
 
-  it("does not register write tools when ENABLE_WRITE_OPS is unset", () => {
+  it("registers write tools but marks them DISABLED when ENABLE_WRITE_OPS is unset", () => {
     const server = createPowerAutomateServer(config)
-    const tools = server.getCapabilities().tools.map((t) => t.name)
-    expect(tools).not.toContain("enable_flow")
-    expect(tools).not.toContain("disable_flow")
+    const tools = server.getCapabilities().tools
+    const names = tools.map((t) => t.name)
+    for (const name of [
+      "enable_flow",
+      "disable_flow",
+      "cancel_flow_run",
+      "resubmit_flow_run",
+      "add_flow_owner",
+      "remove_flow_owner",
+    ]) {
+      expect(names).toContain(name)
+    }
+    const enable = tools.find((t) => t.name === "enable_flow")
+    expect(enable?.description).toMatch(/DISABLED/)
   })
 })

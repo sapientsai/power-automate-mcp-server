@@ -37,3 +37,19 @@ export const renderResult = <E extends AppError, T>(result: Either<E, T>): strin
     },
     (value) => JSON.stringify(value, null, 2),
   )
+
+/**
+ * Gate a mutating tool. Throws (before any backend call, so nothing mutates) with an
+ * actionable message when write ops are disabled.
+ */
+export const ensureWriteEnabled = (enableWrite: boolean, toolName: string): void => {
+  if (!enableWrite) {
+    throw new Error(
+      `write operations are disabled: "${toolName}" did not run and no changes were made. Set ENABLE_WRITE_OPS=true to enable mutating tools.`,
+    )
+  }
+}
+
+/** Confirmation payload for a successful mutation. */
+export const confirmWrite = (operation: string, details: Record<string, unknown>): string =>
+  JSON.stringify({ ok: true, operation, ...details }, null, 2)

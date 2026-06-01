@@ -37,3 +37,40 @@ export const listFlowOwners = async (
   )
   return result.map((envelope) => (envelope.value ?? []).map(mapOwner))
 }
+
+// ── Write ─────────────────────────────────────────────────────────────
+
+export type OwnerRole = "CanEdit" | "CanView"
+
+/**
+ * Grant a principal a role on a flow. The exact PUT permissions body shape for this
+ * unofficial endpoint is not firmly documented — verify against the portal's network tab
+ * and update docs/api-notes.md if the API rejects this payload.
+ */
+export const addFlowOwner = (
+  client: FlowApiClient,
+  env: string,
+  flow: string,
+  principalId: string,
+  roleName: OwnerRole,
+): Promise<Either<FlowApiError, unknown>> =>
+  client.request<unknown>(
+    "PUT",
+    `/environments/${encodeURIComponent(env)}/flows/${encodeURIComponent(flow)}/permissions/${encodeURIComponent(
+      principalId,
+    )}`,
+    { body: { properties: { principal: { id: principalId, type: "User" }, roleName } } },
+  )
+
+export const removeFlowOwner = (
+  client: FlowApiClient,
+  env: string,
+  flow: string,
+  principalId: string,
+): Promise<Either<FlowApiError, unknown>> =>
+  client.request<unknown>(
+    "DELETE",
+    `/environments/${encodeURIComponent(env)}/flows/${encodeURIComponent(flow)}/permissions/${encodeURIComponent(
+      principalId,
+    )}`,
+  )

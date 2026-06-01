@@ -7,7 +7,15 @@ import { z } from "zod"
 
 import type { FlowBackend } from "../backend/index.js"
 import { appErrorToThrowable } from "../errors.js"
-import { DISCLAIMER, type ReadToolOptions, renderResult, resolveEnvironment } from "./shared.js"
+import {
+  confirmWrite,
+  DISCLAIMER,
+  ensureWriteEnabled,
+  type ReadToolOptions,
+  renderResult,
+  resolveEnvironment,
+  type WriteToolOptions,
+} from "./shared.js"
 
 const ENV_PARAM = z
   .string()
@@ -62,5 +70,71 @@ export const registerFlowReadTools = (
         },
         async (env) => renderResult(await backend.getFlow(env, flow)),
       ),
+  })
+}
+
+export const registerFlowWriteTools = (
+  server: SomaServerInstance,
+  backend: FlowBackend,
+  opts: WriteToolOptions,
+): void => {
+  const gated = opts.enableWrite ? "" : " [DISABLED: set ENABLE_WRITE_OPS=true]"
+
+  server.addTool({
+    name: "enable_flow",
+    description: [
+      `Turn a flow on (POST .../start)${gated}.`,
+      "Parameters: flow (required), environment (optional). Verify with get_flow (state -> Started).",
+      DISCLAIMER,
+    ].join("\n"),
+    annotations: { destructiveHint: true, title: "Enable flow" },
+    parameters: z.object({
+      environment: ENV_PARAM,
+      flow: z.string().describe("Flow GUID name (from list_flows)."),
+    }),
+    execute: async ({ environment, flow }) => {
+      ensureWriteEnabled(opts.enableWrite, "enable_flow")
+      return (await resolveEnvironment(backend, opts.defaultEnvironment, environment)).fold(
+        (err) => {
+          throw appErrorToThrowable(err)
+        },
+        async (env) =>
+          (await backend.enableFlow(env, flow)).fold(
+            (err) => {
+              throw appErrorToThrowable(err)
+            },
+            () => confirmWrite("enable_flow", { environment: env, flow }),
+          ),
+      )
+    },
+  })
+
+  server.addTool({
+    name: "disable_flow",
+    description: [
+      `Turn a flow off (POST .../stop)${gated}.`,
+      "Parameters: flow (required), environment (optional). Verify with get_flow (state -> Stopped).",
+      DISCLAIMER,
+    ].join("\n"),
+    annotations: { destructiveHint: true, title: "Disable flow" },
+    parameters: z.object({
+      environment: ENV_PARAM,
+      flow: z.string().describe("Flow GUID name (from list_flows)."),
+    }),
+    execute: async ({ environment, flow }) => {
+      ensureWriteEnabled(opts.enableWrite, "disable_flow")
+      return (await resolveEnvironment(backend, opts.defaultEnvironment, environment)).fold(
+        (err) => {
+          throw appErrorToThrowable(err)
+        },
+        async (env) =>
+          (await backend.disableFlow(env, flow)).fold(
+            (err) => {
+              throw appErrorToThrowable(err)
+            },
+            () => confirmWrite("disable_flow", { environment: env, flow }),
+          ),
+      )
+    },
   })
 }
