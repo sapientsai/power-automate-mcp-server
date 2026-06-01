@@ -14,13 +14,13 @@
   ],
   "author": "jordan.burke@gmail.com",
   "license": "MIT",
-  "homepage": "https://github.com/jordanburke/power-automate-mcp-server",
+  "homepage": "https://github.com/sapientsai/power-automate-mcp-server",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jordanburke/power-automate-mcp-server"
+    "url": "https://github.com/sapientsai/power-automate-mcp-server"
   },
   "bugs": {
-    "url": "https://github.com/jordanburke/power-automate-mcp-server/issues"
+    "url": "https://github.com/sapientsai/power-automate-mcp-server/issues"
   },
   "type": "module",
   "bin": {

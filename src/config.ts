@@ -101,7 +101,7 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): Either<ConfigE
         telemetry: parseTelemetry(env.TELEMETRY),
         telemetryFilePath: env.TELEMETRY_FILE?.trim() || "./logs/events.ndjson",
         logLevel: env.LOG_LEVEL?.trim() || "info",
-        feedbackRepo: env.FEEDBACK_GITHUB_REPO?.trim() || "jordanburke/power-automate-mcp-server",
+        feedbackRepo: env.FEEDBACK_GITHUB_REPO?.trim() || "sapientsai/power-automate-mcp-server",
       }
       return Right(config)
     }),

@@ -1,5 +1,6 @@
 # power-automate-mcp-server
 
+[![Node.js CI](https://github.com/sapientsai/power-automate-mcp-server/actions/workflows/node.js.yml/badge.svg)](https://github.com/sapientsai/power-automate-mcp-server/actions/workflows/node.js.yml)
 [![npm version](https://img.shields.io/npm/v/power-automate-mcp-server.svg)](https://www.npmjs.com/package/power-automate-mcp-server)
 [![npm downloads](https://img.shields.io/npm/dm/power-automate-mcp-server.svg)](https://www.npmjs.com/package/power-automate-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
