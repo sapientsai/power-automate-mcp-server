@@ -2,12 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/power-automate-mcp-server.svg)](https://www.npmjs.com/package/power-automate-mcp-server)
 [![npm downloads](https://img.shields.io/npm/dm/power-automate-mcp-server.svg)](https://www.npmjs.com/package/power-automate-mcp-server)
-[![GitHub stars](https://img.shields.io/github/stars/jordanburke/power-automate-mcp-server.svg?style=flat&logo=github)](https://github.com/jordanburke/power-automate-mcp-server/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-
-<a href="https://glama.ai/mcp/servers/@jordanburke/power-automate-mcp-server">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/@jordanburke/power-automate-mcp-server/badge" alt="power-automate-mcp-server MCP server" />
-</a>
 
 An MCP server that lets agents **inspect and operate Microsoft Power Automate cloud flows**
 from a CLI/agent context — list and inspect flows, debug runs, check connections and owners,
@@ -178,3 +173,7 @@ Integration tests that hit a real tenant live under `test/integration/` and run 
 ## License
 
 MIT.
+
+---
+
+**Sponsored by <a href="https://sapientsai.com/"><img src="https://sapientsai.com/images/logo.svg" alt="SapientsAI" width="20" style="vertical-align: middle;"> SapientsAI</a>** — Building agentic AI for businesses
