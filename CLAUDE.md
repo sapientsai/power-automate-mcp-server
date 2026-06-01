@@ -69,6 +69,7 @@ bin.ts → index.ts (createPowerAutomateServer)
 ## Status
 
 v1 scaffold complete and `pnpm validate` green: auth, Flow API client, 7 read tools, 6 gated
-write tools, feedback tool, telemetry, health/info/dashboard, Docker, docs. **Not yet run
-against a real tenant** — the api-notes unknowns (esp. #1 scope) are pending first sign-in.
-Not pushed to remote pending review.
+write tools, feedback tool, telemetry, health/info/dashboard, Docker, docs. **Merged to `main`**
+(`sapientsai/power-automate-mcp-server`); `feat/bootstrap` deleted. **Not yet run against a
+real tenant** — the api-notes unknowns (esp. #1 scope) are pending first sign-in. First npm
+publish is manual.
