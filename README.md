@@ -1,112 +1,180 @@
-## ts-builds-template
+# power-automate-mcp-server
 
-[![Node.js CI](https://github.com/jordanburke/ts-builds-template/actions/workflows/node.js.yml/badge.svg)](https://github.com/jordanburke/ts-builds-template/actions/workflows/node.js.yml)
-[![npm version](https://img.shields.io/npm/v/ts-builds-template.svg)](https://www.npmjs.com/package/ts-builds-template)
+[![Node.js CI](https://github.com/sapientsai/power-automate-mcp-server/actions/workflows/node.js.yml/badge.svg)](https://github.com/sapientsai/power-automate-mcp-server/actions/workflows/node.js.yml)
+[![npm version](https://img.shields.io/npm/v/power-automate-mcp-server.svg)](https://www.npmjs.com/package/power-automate-mcp-server)
+[![npm downloads](https://img.shields.io/npm/dm/power-automate-mcp-server.svg)](https://www.npmjs.com/package/power-automate-mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A modern TypeScript library template with standardized build scripts and tooling.
+An MCP server that lets agents **inspect and operate Microsoft Power Automate cloud flows**
+from a CLI/agent context — list and inspect flows, debug runs, check connections and owners,
+and (when explicitly enabled) enable/disable flows, cancel/resubmit runs, and manage owners.
 
-## Features
+The Power Automate **portal** is the authoring surface; this server is the **management**
+surface. Built on [SomaMCP](https://github.com/jordanburke/somamcp) (telemetry, health/info/
+dashboard, error classification) over FastMCP.
 
-- **Modern Build System**: [ts-builds](https://github.com/jordanburke/ts-builds) + [tsdown](https://tsdown.dev/) for fast bundling
-- **Testing**: [Vitest](https://vitest.dev/) with coverage reporting
-- **Code Quality**: ESLint + Prettier with automatic formatting and fixing
-- **ESM Output**: ES module output with proper TypeScript declarations
-- **Standardized Scripts**: Consistent commands via ts-builds across all projects
+> ⚠️ **Unofficial API.** v1 targets `api.flow.microsoft.com` — the surface the Power Automate
+> portal itself uses. Microsoft labels it _"isn't supported. Customers should instead use the
+> Dataverse Web APIs."_ It is stable in practice and, unlike Dataverse, sees **all** flows
+> (including personal "My Flows") and works on M365‑seeded entitlements (no Premium license).
+> Every tool's description carries this disclaimer. A supported Dataverse backend is stubbed
+> for the future (see [`src/backend/dataverse/README.md`](src/backend/dataverse/README.md)).
 
-## Quick Start
-
-1. **Use this template** to create a new repository
-2. **Clone your new repository**
-3. **Install dependencies**: `pnpm install`
-4. **Start developing**: `pnpm dev` (builds with watch mode)
-5. **Before committing**: `pnpm validate` (format + lint + test + build)
-
-## Development Commands
-
-### Pre-Checkin Command
+## Quick start
 
 ```bash
-pnpm validate  # Main command: format, lint, test, and build everything
+pnpm install
+cp .env.example .env          # set AZURE_CLIENT_ID (see "App registration" below)
+pnpm build
+pnpm dev:stdio                # local agent over stdio (device-code sign-in to stderr)
 ```
 
-### Individual Commands
+On first use the server prints a device-code prompt to **stderr**; open
+`https://microsoft.com/devicelogin`, enter the code, and sign in. The token is cached
+(`TOKEN_CACHE_PATH`, mode 0600) and silently refreshed thereafter.
+
+### Add to an MCP client (stdio)
+
+```jsonc
+{
+  "mcpServers": {
+    "power-automate": {
+      "command": "npx",
+      "args": ["-y", "power-automate-mcp-server", "--stdio"],
+      "env": { "AZURE_CLIENT_ID": "<your-app-registration-client-id>" },
+    },
+  },
+}
+```
+
+## App registration
+
+This server ships **no** default client id — you register your own (one‑time):
+
+1. **Azure Portal → Microsoft Entra ID → App registrations → New registration.**
+2. Name it (e.g. `power-automate-mcp`). Supported account types: **multitenant** (or
+   single‑tenant if you'll only ever use one org).
+3. **Authentication → Add a platform → Mobile and desktop applications.** Add redirect URI
+   `http://localhost` (unused by device code, but required to register the platform). Set
+   **"Allow public client flows" = Yes**.
+4. **API permissions → Add a permission.** You need a **delegated** permission for the Power
+   Automate / _Microsoft Flow Service_ API. If it isn't in the picker, see "Token audience"
+   below — this is the known friction point.
+5. Copy the **Application (client) ID** → `AZURE_CLIENT_ID`.
+
+For unattended `clientCredentials` mode instead: add a **client secret**, grant **application**
+permissions with **admin consent**, and set `AZURE_AUTH_MODE=clientCredentials`,
+`AZURE_TENANT_ID=<your tenant>`, `AZURE_CLIENT_SECRET=...`. Note app‑only has **limited Flow
+reach** (it generally cannot see personal "My Flows").
+
+### Token audience — verify on first run ⚠️
+
+The exact OAuth scope that mints a token for the `service.flow.microsoft.com` audience from a
+_custom_ public client is **the #1 thing to confirm**. The server tries these in order at
+first sign‑in and logs the winner to stderr/telemetry:
+
+1. `https://service.flow.microsoft.com//.default` (double slash is intentional in some samples)
+2. `https://service.flow.microsoft.com/.default`
+3. `https://service.flow.microsoft.com/User`
+
+Pin the winner via `FLOW_SCOPES` and record it in [`docs/api-notes.md`](docs/api-notes.md).
+If none work, the _Microsoft Flow Service_ delegated permission likely isn't grantable to a
+third‑party app in your tenant — a tenant admin must add it (see `docs/api-notes.md` Plan B/C).
+
+## Tools
+
+All tools are **read‑only by default**. Write tools are registered but **refuse** unless
+`ENABLE_WRITE_OPS=true`.
+
+### Read-only (always enabled)
+
+| Tool                | Parameters                                       | Returns                                                                    |
+| ------------------- | ------------------------------------------------ | -------------------------------------------------------------------------- |
+| `list_environments` | —                                                | `{ id, name, displayName, location, isDefault }[]`                         |
+| `list_flows`        | `environment?`, `owner?`                         | `{ name, displayName, state, createdTime, lastModifiedTime, owner }[]`     |
+| `get_flow`          | `environment?`, `flow`                           | full flow incl. `definition`, `connectionReferences`, trigger/action names |
+| `list_flow_runs`    | `environment?`, `flow`, `top?` (≤100), `status?` | `{ name, status, startTime, endTime, durationMs, triggerName, error }[]`   |
+| `get_flow_run`      | `environment?`, `flow`, `run`                    | run detail + first‑failure + `raw` properties (debugging)                  |
+| `list_connections`  | `environment?`                                   | `{ name, apiName, displayName, status, accountName, expiresAt }[]`         |
+| `list_flow_owners`  | `environment?`, `flow`                           | `{ principalId, principalType, roleName, principalDisplayName }[]`         |
+
+### Write (require `ENABLE_WRITE_OPS=true`)
+
+| Tool                           | Parameters                                                               |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| `enable_flow` / `disable_flow` | `environment?`, `flow`                                                   |
+| `cancel_flow_run`              | `environment?`, `flow`, `run`                                            |
+| `resubmit_flow_run`            | `environment?`, `flow`, `run`, `trigger`                                 |
+| `add_flow_owner`               | `environment?`, `flow`, `principalId`, `roleName` (`CanEdit`\|`CanView`) |
+| `remove_flow_owner`            | `environment?`, `flow`, `principalId`                                    |
+
+When `environment` is omitted, tools use `DEFAULT_ENVIRONMENT` if set, else the discovered
+default environment (`isDefault: true`).
+
+### Built-in (from SomaMCP)
+
+- `info` MCP tool — server name, version, git SHA, capability counts.
+- `report_feedback` — file API‑drift/bug reports as GitHub issues (`FEEDBACK_GITHUB_REPO`,
+  `GITHUB_TOKEN`).
+- HTTP endpoints `/health`, `/health/detail`, `/info`, `/dashboard` (the detailed ones are
+  protected by `MCP_API_KEY` when set).
+
+## Configuration
+
+See [`.env.example`](.env.example) for the full list. Highlights: `AZURE_CLIENT_ID` (required),
+`AZURE_TENANT_ID` (`common`), `AZURE_AUTH_MODE`, `TRANSPORT` (`stdio`\|`http`), `PORT`,
+`ENABLE_WRITE_OPS`, `DEFAULT_ENVIRONMENT`, `MCP_API_KEY`, `TELEMETRY`, `TOKEN_CACHE_PATH`.
+
+## Transports & deployment
+
+| Scenario                | Transport | Auth                                   | Notes                                                                        |
+| ----------------------- | --------- | -------------------------------------- | ---------------------------------------------------------------------------- |
+| Local agent             | `stdio`   | device-code                            | Primary. Full reach. `pnpm dev:stdio`.                                       |
+| Docker, single operator | `http`    | device-code + **mounted token volume** | Auth once via `docker logs`; persists. Full reach. `docker compose up`.      |
+| Docker, unattended      | `http`    | `clientCredentials`                    | No human, but **no personal flows**; verify it can mint a Flow token at all. |
+
+> **v2:** per‑user browser OAuth over HTTP via FastMCP's `AzureProvider` + disk token cache
+> (the upstream token surfaces on the session). Reachable through SomaMCP's `backendOptions`
+> passthrough without a fork — not wired in v1.
 
 ```bash
-# Formatting
-pnpm format        # Format code with Prettier
-pnpm format:check  # Check formatting without writing
-
-# Linting
-pnpm lint          # Fix ESLint issues
-pnpm lint:check    # Check ESLint issues without fixing
-
-# Testing
-pnpm test          # Run tests once
-pnpm test:watch    # Run tests in watch mode
-pnpm test:coverage # Run tests with coverage report
-
-# Building
-pnpm build         # Production build
-pnpm dev           # Development mode with watch
-
-# Type Checking
-pnpm typecheck     # Check TypeScript types
+# Docker (single-operator device-code with a persisted token volume)
+AZURE_CLIENT_ID=... docker compose up --build
+docker compose logs -f          # grab the device code on first run
+curl -s http://localhost:3333/health
 ```
 
-## Publishing
-
-The template automatically runs `pnpm validate` before publishing via the `prepublishOnly` script.
+## Development
 
 ```bash
-npm version patch|minor|major
-npm publish --access public
+pnpm validate        # format + lint + typecheck + test + build
+pnpm test            # vitest (unit)
+pnpm dev             # http transport, watch
+pnpm dev:stdio       # stdio transport, watch
+pnpm build           # tsdown -> dist/
 ```
 
-## Project Structure
+Integration tests that hit a real tenant live under `test/integration/` and run only with
+`INTEGRATION=1` (see that folder's README). CI runs unit tests only.
 
-```
-src/
-├── index.ts          # Main library entry point
-test/
-├── *.spec.ts         # Test files
-dist/                 # Built output (ES module + types)
-```
+## Troubleshooting
 
-## Tooling
+- **Device code never grants a token / "device-code sign-in failed for all scope candidates"**
+  → the Flow audience isn't grantable to your app. See "Token audience" and `docs/api-notes.md`.
+- **`auth error` on every call** → token cache stale; restart to re‑auth, or delete
+  `TOKEN_CACHE_PATH`.
+- **`not found` on a known flow** → wrong environment; run `list_environments` / `list_flows`
+  first. The flow `name` is the GUID, not the display name.
+- **`forbidden`** → the signed‑in user lacks permission on that flow.
+- **Empty `list_flows`** in `clientCredentials` mode → app‑only can't see personal flows; use
+  `interactive`.
+- **An endpoint 404/410s unexpectedly** → Microsoft may have moved the api‑version; check the
+  portal's network tab and pin a newer `api-version` (see `docs/api-notes.md`).
 
-- **Build**: [ts-builds](https://github.com/jordanburke/ts-builds) - Centralized TypeScript toolchain
-- **Bundler**: [tsdown](https://tsdown.dev/) - Fast TypeScript bundler (successor to tsup)
-- **Test**: [Vitest](https://vitest.dev/) - Fast unit test framework
-- **Lint**: [ESLint](https://eslint.org/) with TypeScript support
-- **Format**: [Prettier](https://prettier.io/) with ESLint integration
-- **Package Manager**: [pnpm](https://pnpm.io/) for fast, efficient installs
+## License
 
-## Claude Code Skill
-
-This repository includes a Claude Code skill for bootstrapping new TypeScript libraries from this template:
-
-**Location**: `.claude/skills/ts-builds-template/`
-
-**Usage**: When using Claude Code, the skill provides guidance for:
-
-- Cloning and customizing this template for a new library
-- Understanding the project structure and dev workflow
-- Publishing to npm
-
-**Installation** (for use in other projects):
-
-```bash
-# Copy the skill to your Claude Code skills directory
-cp -r .claude/skills/ts-builds-template ~/.claude/skills/
-```
-
-**Related Skills**: For tooling configuration, migration guides, and standardizing existing projects, see the [ts-builds](https://github.com/jordanburke/ts-builds) skill.
-
-**References**:
-
-- [CLAUDE.md](./CLAUDE.md) - Development guidance for this project
-- [.claude/skills/ts-builds-template/](./.claude/skills/ts-builds-template/) - Complete skill documentation
+MIT.
 
 ---
 
-_This template is based on the earlier work of https://github.com/orabazu/tsup-library-template but updated with modern tooling and standardized scripts._
+**Sponsored by <a href="https://sapientsai.com/"><img src="https://sapientsai.com/images/logo.svg" alt="SapientsAI" width="20" style="vertical-align: middle;"> SapientsAI</a>** — Building agentic AI for businesses

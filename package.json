@@ -1,40 +1,31 @@
 {
-  "name": "ts-builds-template",
-  "version": "1.0.0",
-  "description": "A basic template for creating a TypeScript Builds and Publishing it to NPM.",
+  "name": "power-automate-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server to inspect and operate Microsoft Power Automate cloud flows (list, debug runs, enable/disable, owners) via the api.flow.microsoft.com management surface.",
   "keywords": [
-    "typescript",
-    "template",
-    "tsdown",
-    "npm"
+    "mcp",
+    "model-context-protocol",
+    "power-automate",
+    "microsoft-flow",
+    "power-platform",
+    "somamcp",
+    "azure",
+    "typescript"
   ],
   "author": "jordan.burke@gmail.com",
   "license": "MIT",
-  "homepage": "https://github.com/jordanburke/ts-builds-template",
+  "homepage": "https://github.com/sapientsai/power-automate-mcp-server",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jordanburke/ts-builds-template"
+    "url": "https://github.com/sapientsai/power-automate-mcp-server"
   },
-  "scripts": {
-    "validate": "ts-builds validate",
-    "format": "ts-builds format",
-    "format:check": "ts-builds format:check",
-    "lint": "ts-builds lint",
-    "lint:check": "ts-builds lint:check",
-    "typecheck": "ts-builds typecheck",
-    "test": "ts-builds test",
-    "test:watch": "ts-builds test:watch",
-    "test:coverage": "ts-builds test:coverage",
-    "build": "ts-builds build",
-    "dev": "ts-builds dev",
-    "prepublishOnly": "pnpm validate"
-  },
-  "devDependencies": {
-    "@types/node": "^24.12.4",
-    "ts-builds": "^2.8.1",
-    "tsdown": "^0.22.0"
+  "bugs": {
+    "url": "https://github.com/sapientsai/power-automate-mcp-server/issues"
   },
   "type": "module",
+  "bin": {
+    "power-automate-mcp-server": "./dist/bin.js"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -49,6 +40,39 @@
     "lib",
     "dist"
   ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "validate": "ts-builds validate",
+    "format": "ts-builds format",
+    "format:check": "ts-builds format:check",
+    "lint": "ts-builds lint",
+    "lint:check": "ts-builds lint:check",
+    "typecheck": "ts-builds typecheck",
+    "test": "ts-builds test",
+    "test:watch": "ts-builds test:watch",
+    "test:coverage": "ts-builds test:coverage",
+    "build": "ts-builds build",
+    "dev": "tsx watch src/bin.ts",
+    "dev:stdio": "tsx watch src/bin.ts --stdio",
+    "start": "node dist/bin.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/bin.js",
+    "prepublishOnly": "pnpm validate"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^5.2.2",
+    "dotenv": "^17.4.2",
+    "functype": "^1.2.0",
+    "somamcp": "^1.0.9",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.4",
+    "ts-builds": "^2.8.1",
+    "tsdown": "^0.22.1",
+    "tsx": "^4.20.6"
+  },
   "prettier": "ts-builds/prettier",
   "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319"
 }

@@ -1,0 +1,42 @@
+services:
+  power-automate-mcp:
+    build:
+      context: .
+      args:
+        GIT_HASH: ${GIT_HASH:-}
+    ports:
+      - "${PORT:-3333}:3333"
+    environment:
+      # Required: your multi-tenant public client app registration (see README).
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-common}
+      # Default Docker auth model: interactive device-code (full Flow reach, incl. personal
+      # flows). On first tool call the device code prints to `docker logs`; complete it once
+      # at https://microsoft.com/devicelogin. The token persists in the mounted volume below.
+      - AZURE_AUTH_MODE=${AZURE_AUTH_MODE:-interactive}
+      - TRANSPORT=http
+      - PORT=3333
+      - ENDPOINT=${ENDPOINT:-/mcp}
+      - TOKEN_CACHE_PATH=/data/token.json
+      # Protect the HTTP operational endpoints + MCP calls with a bearer token (recommended).
+      - MCP_API_KEY=${MCP_API_KEY:-}
+      # Write tools are off by default; set true only for a trusted operator.
+      - ENABLE_WRITE_OPS=${ENABLE_WRITE_OPS:-false}
+      - DEFAULT_ENVIRONMENT=${DEFAULT_ENVIRONMENT:-}
+      - TELEMETRY=${TELEMETRY:-console,file}
+      # ── Unattended alternative (no human, but limited Flow reach — no personal flows) ──
+      # Set AZURE_AUTH_MODE=clientCredentials, a real AZURE_TENANT_ID, and AZURE_CLIENT_SECRET.
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}
+    volumes:
+      # Persists the device-code token cache across restarts (single-operator deployment).
+      - power-automate-token:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  power-automate-token:
