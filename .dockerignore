@@ -1,0 +1,37 @@
+# Dependencies (reinstalled in the image)
+node_modules/
+
+# Build output (rebuilt in the image)
+dist/
+lib/
+
+# Secrets / env
+.env
+.env.local
+.env.*.local
+
+# Local runtime state
+logs/
+*.ndjson
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Tests
+test/
+*.spec.ts
+coverage/
+
+# Docs (keep README for context)
+*.md
+!README.md
+
+# OS
+.DS_Store
+Thumbs.db

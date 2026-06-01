@@ -11,6 +11,8 @@
 import {
   createCompositeTelemetry,
   createConsoleTelemetry,
+  createFeedbackTool,
+  createGithubFeedback,
   createJsonFileTelemetry,
   createServer,
   type SomaServerInstance,
@@ -94,6 +96,19 @@ export const createPowerAutomateServer = (config: ServerConfig): SomaServerInsta
   registerFlowWriteTools(server, backend, writeOpts)
   registerRunWriteTools(server, backend, writeOpts)
   registerOwnerWriteTools(server, backend, writeOpts)
+
+  // report_feedback — lets agents self-report API drift / bugs as GitHub issues.
+  // Submits only when GITHUB_TOKEN is set; otherwise the tool reports that gracefully.
+  server.addTool(
+    createFeedbackTool({
+      name: "report_feedback",
+      extraLabels: ["mcp-feedback"],
+      provider: createGithubFeedback({
+        repo: config.feedbackRepo as `${string}/${string}`,
+        getToken: () => process.env.GITHUB_TOKEN || undefined,
+      }),
+    }),
+  )
 
   return server
 }

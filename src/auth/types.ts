@@ -73,4 +73,7 @@ export type ServerConfig = {
   readonly telemetry: ReadonlyArray<TelemetrySink>
   readonly telemetryFilePath: string
   readonly logLevel: string
+
+  // Feedback (report_feedback tool target — "owner/repo")
+  readonly feedbackRepo: string
 }
