@@ -10,7 +10,7 @@ from a CLI/agent context — list and inspect flows, debug runs, check connectio
 and (when explicitly enabled) enable/disable flows, cancel/resubmit runs, and manage owners.
 
 The Power Automate **portal** is the authoring surface; this server is the **management**
-surface. Built on [SomaMCP](https://github.com/jordanburke/somamcp) (telemetry, health/info/
+surface. Built on [SomaMCP](https://github.com/sapientsai/SomaMCP) (telemetry, health/info/
 dashboard, error classification) over FastMCP.
 
 > ⚠️ **Unofficial API.** v1 targets `api.flow.microsoft.com` — the surface the Power Automate
