@@ -19,6 +19,7 @@ export type AuthErrorReason =
   | "no_token"
   | "expired"
   | "device_code_failed"
+  | "device_code_pending"
   | "silent_failed"
   | "client_credentials_failed"
 
@@ -30,6 +31,7 @@ export type AuthError = {
 
 export type FlowApiErrorKind =
   | "auth_expired"
+  | "auth_pending"
   | "not_found"
   | "forbidden"
   | "rate_limited"
@@ -89,6 +91,8 @@ export const leftFlowApi = <T>(
  */
 const FLOW_API_SUGGESTIONS: Record<FlowApiErrorKind, string> = {
   auth_expired: "Token cache is stale or the session expired. Restart the server to re-run the device-code sign-in.",
+  auth_pending:
+    "Sign-in has started. Open the URL shown above and enter the code, then call this tool again — the token completes in the background.",
   not_found:
     "The flow, run, or environment was not found in this environment. List the parent resource first to confirm the identifier.",
   forbidden: "The signed-in user lacks permission on this resource. Check flow ownership or your Power Automate role.",
@@ -106,6 +110,7 @@ const FLOW_API_SUGGESTIONS: Record<FlowApiErrorKind, string> = {
  */
 const FLOW_API_CLASSIFY_PREFIX: Record<FlowApiErrorKind, string> = {
   auth_expired: "auth error",
+  auth_pending: "authorization pending",
   not_found: "not found",
   forbidden: "forbidden",
   rate_limited: "rate limited",

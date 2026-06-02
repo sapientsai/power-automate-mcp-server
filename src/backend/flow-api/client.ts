@@ -58,11 +58,15 @@ export const createFlowApiClient = (deps: { tokenProvider: TokenProvider }): Flo
   ): Promise<Either<FlowApiError, T>> => {
     const tokenE = await deps.tokenProvider.getToken()
     if (tokenE.isLeft()) {
-      const message = tokenE.fold(
-        (e) => e.message,
-        () => "",
+      return tokenE.fold(
+        (e): Either<FlowApiError, T> =>
+          // A device-code sign-in in progress is surfaced verbatim (it carries the prompt the
+          // user must act on), not wrapped as a stale-token error.
+          e.reason === "device_code_pending"
+            ? leftFlowApi<T>("auth_pending", e.message)
+            : leftFlowApi<T>("auth_expired", `could not acquire a Flow API token: ${e.message}`),
+        (): Either<FlowApiError, T> => leftFlowApi<T>("auth_expired", "unreachable"),
       )
-      return leftFlowApi<T>("auth_expired", `could not acquire a Flow API token: ${message}`)
     }
     const token = tokenE.orElse("")
 

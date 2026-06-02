@@ -47,7 +47,17 @@ type Current = {
   account?: AccountInfo
 }
 
-const errMsg = (e: unknown): string => (e instanceof Error ? e.message : String(e))
+const errMsg = (e: unknown): string => {
+  // MSAL errors carry the actionable detail (incl. the AADSTS code) on errorCode/errorMessage,
+  // not the generic .message. Surface all of it so first-sign-in failures are diagnosable.
+  if (e && typeof e === "object") {
+    const m = e as { errorCode?: string; errorMessage?: string; subError?: string; message?: string }
+    const parts = [m.errorCode, m.subError, m.errorMessage].filter((p): p is string => Boolean(p))
+    if (parts.length > 0) return parts.join(" / ")
+    if (m.message) return m.message
+  }
+  return e instanceof Error ? e.message : String(e)
+}
 
 const isValid = (c: Current): boolean => Date.now() < c.expiresAt - REFRESH_BUFFER_MS
 
@@ -108,7 +118,12 @@ const createInteractiveManager = (config: ServerConfig, log: (m: string) => void
     auth: { clientId: config.clientId, authority: authorityFor(config.tenantId) },
     cache: { cachePlugin: createFileCachePlugin(config.tokenCachePath) },
   })
-  const state: { current: Current | null } = { current: null }
+  // `pending` holds an in-flight device-code sign-in: the user-facing prompt plus the
+  // background promise that caches the token once the user completes the browser step.
+  const state: { current: Current | null; pending: { message: string; promise: Promise<void> } | null } = {
+    current: null,
+    pending: null,
+  }
 
   const trySilent = async (): Promise<Either<AuthError, string>> => {
     const accounts = (await Try.fromPromise(app.getTokenCache().getAllAccounts())).fold(
@@ -128,29 +143,70 @@ const createInteractiveManager = (config: ServerConfig, log: (m: string) => void
     )
   }
 
-  const tryDeviceCode = async (): Promise<Either<AuthError, string>> => {
+  /**
+   * Begin a device-code sign-in. Tries scope candidates until the AAD endpoint *accepts* one
+   * (a bad scope fails before any prompt is shown). For the accepted scope it returns
+   * immediately with `device_code_pending` carrying the user prompt, while the token is
+   * acquired in the background and cached on completion — so this works inside the MCP
+   * lifecycle without a hidden stderr prompt.
+   */
+  const beginDeviceCode = async (): Promise<Either<AuthError, string>> => {
     let lastError = "no scope candidates configured"
+
     for (const scopes of scopeSets(config)) {
-      const result = await Try.fromPromise(
-        app.acquireTokenByDeviceCode({ scopes, deviceCodeCallback: (response) => log(response.message) }),
-      )
-      const outcome = result.fold(
-        (err): Either<AuthError, string> | null => {
-          lastError = errMsg(err)
-          return null
-        },
-        (auth): Either<AuthError, string> | null => {
-          if (!auth) {
-            lastError = "device-code flow returned no token"
-            return null
-          }
-          state.current = toCurrent(auth, scopes)
-          log(`[auth] acquired Flow token (device code) using scope: ${scopes.join(" ")}`)
-          return Right(auth.accessToken)
-        },
-      )
-      if (outcome) return outcome
+      // A mutable box (not bare `let`s) so the async callbacks' writes survive TS narrowing
+      // across the `await` below.
+      const box: { message: string | null; outcome: Either<AuthError, string> | null } = {
+        message: null,
+        outcome: null,
+      }
+      let signalMessage: () => void = () => {}
+      const messageReady = new Promise<void>((resolve) => {
+        signalMessage = resolve
+      })
+
+      const background = app
+        .acquireTokenByDeviceCode({
+          scopes,
+          deviceCodeCallback: (response) => {
+            box.message = response.message
+            signalMessage()
+          },
+        })
+        .then(
+          (auth): void => {
+            if (auth) {
+              state.current = toCurrent(auth, scopes)
+              log(`[auth] acquired Flow token (device code) using scope: ${scopes.join(" ")}`)
+              box.outcome = Right(auth.accessToken)
+            } else {
+              box.outcome = leftAuth("device-code flow returned no token", "device_code_failed")
+            }
+            state.pending = null
+          },
+          (err): void => {
+            lastError = errMsg(err)
+            box.outcome = leftAuth(`device-code completion failed: ${lastError}`, "device_code_failed")
+            state.pending = null
+          },
+        )
+
+      // Whichever happens first: the prompt is issued (scope accepted) or the request settles
+      // (scope rejected, or — rarely — an instant cached completion).
+      await Promise.race([messageReady, background])
+
+      if (box.message !== null && box.outcome === null) {
+        log(`[auth] device-code prompt issued using scope: ${scopes.join(" ")}`)
+        state.pending = { message: box.message, promise: background }
+        return leftAuth(
+          `Authorization required. ${box.message} After you complete sign-in in the browser, call the tool again — it finishes in the background.`,
+          "device_code_pending",
+        )
+      }
+      if (box.outcome !== null && box.outcome.isRight()) return box.outcome
+      // Otherwise this scope was rejected before a prompt — try the next candidate.
     }
+
     return leftAuth(
       `device-code sign-in failed for all scope candidates. Last error: ${lastError}`,
       "device_code_failed",
@@ -159,9 +215,19 @@ const createInteractiveManager = (config: ServerConfig, log: (m: string) => void
 
   const getToken = async (): Promise<Either<AuthError, string>> => {
     if (state.current && isValid(state.current)) return Right(state.current.accessToken)
+
     const silent = await trySilent()
     if (silent.isRight()) return silent
-    return tryDeviceCode()
+
+    // A sign-in is already in flight — tell the caller to finish it rather than starting another.
+    if (state.pending) {
+      return leftAuth(
+        `Authorization pending. ${state.pending.message} Call the tool again once you've completed sign-in.`,
+        "device_code_pending",
+      )
+    }
+
+    return beginDeviceCode()
   }
 
   return { getToken }
