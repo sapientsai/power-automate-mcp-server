@@ -5,12 +5,15 @@
 [![npm downloads](https://img.shields.io/npm/dm/power-automate-mcp-server.svg)](https://www.npmjs.com/package/power-automate-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-An MCP server that lets agents **inspect and operate Microsoft Power Automate cloud flows**
-from a CLI/agent context — list and inspect flows, debug runs, check connections and owners,
-and (when explicitly enabled) enable/disable flows, cancel/resubmit runs, and manage owners.
+An MCP server that lets agents **inspect, operate, and author Microsoft Power Automate cloud
+flows** from a CLI/agent context — list and inspect flows, debug runs, check connections and
+owners, and (when explicitly enabled) enable/disable flows, cancel/resubmit runs, manage
+owners, and **create/update/delete flows**.
 
-The Power Automate **portal** is the authoring surface; this server is the **management**
-surface. Built on [SomaMCP](https://github.com/sapientsai/SomaMCP) (telemetry, health/info/
+Primarily a **management** surface — the Power Automate portal's visual designer remains the
+better place to author complex flow logic — but `create_flow`/`update_flow`/`delete_flow` are
+also available (write-gated) for programmatic authoring. Built on
+[SomaMCP](https://github.com/sapientsai/SomaMCP) (telemetry, health/info/
 dashboard, error classification) over FastMCP.
 
 > ⚠️ **Unofficial API.** v1 targets `api.flow.microsoft.com` — the surface the Power Automate
@@ -124,13 +127,20 @@ All tools are **read‑only by default**. Write tools are registered but **refus
 
 ### Write (require `ENABLE_WRITE_OPS=true`)
 
-| Tool                           | Parameters                                                               |
-| ------------------------------ | ------------------------------------------------------------------------ |
-| `enable_flow` / `disable_flow` | `environment?`, `flow`                                                   |
-| `cancel_flow_run`              | `environment?`, `flow`, `run`                                            |
-| `resubmit_flow_run`            | `environment?`, `flow`, `run`, `trigger`                                 |
-| `add_flow_owner`               | `environment?`, `flow`, `principalId`, `roleName` (`CanEdit`\|`CanView`) |
-| `remove_flow_owner`            | `environment?`, `flow`, `principalId`                                    |
+| Tool                           | Parameters                                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `create_flow`                  | `environment?`, `displayName`, `definition`, `connectionReferences?`, `state?`                 |
+| `update_flow`                  | `environment?`, `flow`, any of `displayName` / `definition` / `state` / `connectionReferences` |
+| `delete_flow`                  | `environment?`, `flow`, `confirm` (must be `true`)                                             |
+| `enable_flow` / `disable_flow` | `environment?`, `flow`                                                                         |
+| `cancel_flow_run`              | `environment?`, `flow`, `run`                                                                  |
+| `resubmit_flow_run`            | `environment?`, `flow`, `run`, `trigger`                                                       |
+| `add_flow_owner`               | `environment?`, `flow`, `principalId`, `roleName` (`CanEdit`\|`CanView`)                       |
+| `remove_flow_owner`            | `environment?`, `flow`, `principalId`                                                          |
+
+> **Authoring (`create_flow`/`update_flow`):** `definition` is the raw Logic Apps-style
+> workflow JSON (see `get_flow` output as a template). The visual designer is better for
+> complex logic; for edits, `get_flow` → modify the `definition` → pass it back to `update_flow`.
 
 When `environment` is omitted, tools use `DEFAULT_ENVIRONMENT` if set, else the discovered
 default environment (`isDefault: true`).

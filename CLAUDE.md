@@ -4,9 +4,15 @@ Guidance for Claude Code when working in this repository.
 
 ## What this is
 
-`power-automate-mcp-server` — an MCP server to **manage** (not author) Microsoft Power
+`power-automate-mcp-server` — an MCP server to **manage and (lightly) author** Microsoft Power
 Automate cloud flows from an agent context. Built on **SomaMCP** (over FastMCP), TypeScript,
 pnpm, tsdown, vitest, functype, zod v4.
+
+Primary surface is **management** (list/inspect/debug/enable-disable/owners). Flow **authoring**
+(`create_flow`/`update_flow`/`delete_flow`) was originally a v2 non-goal but is now implemented
+and verified — gated behind `ENABLE_WRITE_OPS`, with `delete_flow` requiring `confirm=true`. The
+visual designer is still the better authoring surface for complex definitions; these tools emit
+the raw workflow-definition JSON, so prefer get_flow-as-template + targeted edits.
 
 - **Spec:** the build spec lives in the project history / Civala memory
   (`~/.claude/projects/-Users-jordanburke-IdeaProjects-Civala/memory/project_power_automate_mcp.md`).
@@ -68,8 +74,18 @@ bin.ts → index.ts (createPowerAutomateServer)
 
 ## Status
 
-v1 scaffold complete and `pnpm validate` green: auth, Flow API client, 7 read tools, 6 gated
-write tools, feedback tool, telemetry, health/info/dashboard, Docker, docs. **Merged to `main`**
-(`sapientsai/power-automate-mcp-server`); `feat/bootstrap` deleted. **Not yet run against a
-real tenant** — the api-notes unknowns (esp. #1 scope) are pending first sign-in. First npm
-publish is manual.
+On `main` (`sapientsai/power-automate-mcp-server`), `pnpm validate` green: auth, Flow API
+client, **7 read tools + 9 gated write tools** (incl. create/update/delete_flow), feedback,
+telemetry, health/info/dashboard, Docker, docs.
+
+**Verified end-to-end against a real tenant** (Civala, 2026-06-02): in-chat device-code auth
+(MSAL device-code with a pending/background model so the code surfaces in the tool result —
+no terminal), all 7 read tools, and the full create→edit→delete authoring round-trip. The
+auth maze (specific tenant + Flow Service delegated perm + specific scopes not `.default` +
+public-client flows) and the connections endpoint (per-env regional PowerApps host) are
+solved and recorded in `docs/api-notes.md`. First npm publish is manual.
+
+Gotchas baked in: `common` tenant + Flow `.default` → AADSTS50059 (MSAL hides it as an empty
+device-code response); connections aren't on `api.flow.microsoft.com` (regional PowerApps
+host via `runtimeEndpoints`); mutations return empty 200 bodies (client treats empty 2xx as
+success).
