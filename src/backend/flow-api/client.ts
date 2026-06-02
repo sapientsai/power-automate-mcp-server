@@ -14,7 +14,7 @@ import { type FlowApiError, flowApiError, type FlowApiErrorKind, leftFlowApi } f
 const BASE_URL = "https://api.flow.microsoft.com/providers/Microsoft.ProcessSimple"
 const DEFAULT_API_VERSION = "2016-11-01"
 
-export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE"
+export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
 
 export type RequestOptions = {
   query?: Record<string, string | number | boolean | undefined>
@@ -100,14 +100,16 @@ export const createFlowApiClient = (deps: { tokenProvider: TokenProvider }): Flo
             detail,
           })
         }
-        // 204 No Content (common for start/stop/cancel/delete) — nothing to parse.
+        // Many mutations (start/stop/cancel/delete) return 200/202/204 with an EMPTY body.
+        // Treat any empty success body as "no content" rather than failing to parse it.
         if (response.status === 204) return Right(undefined as T)
+        const text = await response.text()
+        if (text.trim() === "") return Right(undefined as T)
 
-        const parsed = await Try.fromPromise(response.json())
-        return parsed.fold(
+        return Try(() => JSON.parse(text) as T).fold(
           (err) =>
             leftFlowApi<T>("unsupported_api_drift", `${method} ${path} returned an unparseable body: ${errMsg(err)}`),
-          (json) => Right(json as T),
+          (json) => Right(json),
         )
       },
     )

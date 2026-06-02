@@ -17,12 +17,23 @@ import { type FlowApiError, leftFlowApi } from "../errors.js"
 import { createFlowApiClient } from "./flow-api/client.js"
 import { listConnections } from "./flow-api/connections.js"
 import { listEnvironments } from "./flow-api/environments.js"
-import { disableFlow, enableFlow, type FlowFilter, getFlow, listFlows } from "./flow-api/flows.js"
+import {
+  createFlow,
+  type CreateFlowInput,
+  deleteFlow,
+  disableFlow,
+  enableFlow,
+  type FlowFilter,
+  getFlow,
+  listFlows,
+  updateFlow,
+  type UpdateFlowInput,
+} from "./flow-api/flows.js"
 import { addFlowOwner, listFlowOwners, type OwnerRole, removeFlowOwner } from "./flow-api/owners.js"
 import { cancelRun, getRun, listRuns, resubmitRun, type RunListOpts } from "./flow-api/runs.js"
 import type { Connection, Environment, FlowDetail, FlowOwner, FlowSummary, RunDetail, RunSummary } from "./types.js"
 
-export type { FlowFilter } from "./flow-api/flows.js"
+export type { CreateFlowInput, FlowFilter, UpdateFlowInput } from "./flow-api/flows.js"
 export type { OwnerRole } from "./flow-api/owners.js"
 export type { RunListOpts } from "./flow-api/runs.js"
 
@@ -37,6 +48,9 @@ export type FlowBackend = {
   listConnections: (env: string) => Promise<Either<FlowApiError, Connection[]>>
   listFlowOwners: (env: string, flow: string) => Promise<Either<FlowApiError, FlowOwner[]>>
   // Write — only invoked when ENABLE_WRITE_OPS=true (gated at the tool layer).
+  createFlow: (env: string, input: CreateFlowInput) => Promise<Either<FlowApiError, FlowDetail>>
+  updateFlow: (env: string, flow: string, changes: UpdateFlowInput) => Promise<Either<FlowApiError, unknown>>
+  deleteFlow: (env: string, flow: string) => Promise<Either<FlowApiError, unknown>>
   enableFlow: (env: string, flow: string) => Promise<Either<FlowApiError, unknown>>
   disableFlow: (env: string, flow: string) => Promise<Either<FlowApiError, unknown>>
   cancelFlowRun: (env: string, flow: string, run: string) => Promise<Either<FlowApiError, unknown>>
@@ -68,6 +82,9 @@ export const createFlowApiBackend = (deps: { tokenProvider: TokenProvider }): Fl
     getRun: (env, flow, run) => getRun(client, env, flow, run),
     listConnections: (env) => listConnections(client, env),
     listFlowOwners: (env, flow) => listFlowOwners(client, env, flow),
+    createFlow: (env, input) => createFlow(client, env, input),
+    updateFlow: (env, flow, changes) => updateFlow(client, env, flow, changes),
+    deleteFlow: (env, flow) => deleteFlow(client, env, flow),
     enableFlow: (env, flow) => enableFlow(client, env, flow),
     disableFlow: (env, flow) => disableFlow(client, env, flow),
     cancelFlowRun: (env, flow, run) => cancelRun(client, env, flow, run),

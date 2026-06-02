@@ -137,4 +137,104 @@ export const registerFlowWriteTools = (
       )
     },
   })
+
+  server.addTool({
+    name: "create_flow",
+    description: [
+      `Create a new cloud flow from a workflow definition (POST .../flows)${gated}.`,
+      "Parameters: displayName (required); definition (required — the workflow definition JSON with $schema, triggers, actions); connectionReferences (optional); state (Started|Stopped, default Stopped); environment (optional). Returns the created flow.",
+      "Authoring a valid definition is non-trivial — use get_flow on an existing flow as a template. Connection-dependent actions also need matching connectionReferences.",
+      DISCLAIMER,
+    ].join("\n"),
+    annotations: { destructiveHint: true, title: "Create flow" },
+    parameters: z.object({
+      environment: ENV_PARAM,
+      displayName: z.string().describe("Display name for the new flow."),
+      definition: z
+        .record(z.string(), z.unknown())
+        .describe("Workflow definition JSON: $schema, contentVersion, parameters, triggers, actions."),
+      connectionReferences: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .describe("Connection references the definition uses (match get_flow's connectionReferences shape)."),
+      state: z.enum(["Started", "Stopped"]).optional().describe("Initial state (default Stopped)."),
+    }),
+    execute: async ({ environment, displayName, definition, connectionReferences, state }) => {
+      ensureWriteEnabled(opts.enableWrite, "create_flow")
+      return (await resolveEnvironment(backend, opts.defaultEnvironment, environment)).fold(
+        (err) => {
+          throw appErrorToThrowable(err)
+        },
+        async (env) =>
+          renderResult(await backend.createFlow(env, { displayName, definition, connectionReferences, state })),
+      )
+    },
+  })
+
+  server.addTool({
+    name: "update_flow",
+    description: [
+      `Update an existing flow's properties — only the fields you pass (PATCH .../flows/{flow})${gated}.`,
+      "Parameters: flow (required); any of displayName, definition (full workflow JSON), state (Started|Stopped), connectionReferences; environment (optional).",
+      "To edit logic safely: get_flow first, modify the returned `definition`, then pass the whole definition back here.",
+      DISCLAIMER,
+    ].join("\n"),
+    annotations: { destructiveHint: true, title: "Update flow" },
+    parameters: z.object({
+      environment: ENV_PARAM,
+      flow: z.string().describe("Flow GUID name (from list_flows)."),
+      displayName: z.string().optional().describe("New display name."),
+      definition: z.record(z.string(), z.unknown()).optional().describe("Replacement workflow definition JSON."),
+      connectionReferences: z.record(z.string(), z.unknown()).optional().describe("Replacement connection references."),
+      state: z.enum(["Started", "Stopped"]).optional().describe("New state."),
+    }),
+    execute: async ({ environment, flow, displayName, definition, connectionReferences, state }) => {
+      ensureWriteEnabled(opts.enableWrite, "update_flow")
+      return (await resolveEnvironment(backend, opts.defaultEnvironment, environment)).fold(
+        (err) => {
+          throw appErrorToThrowable(err)
+        },
+        async (env) =>
+          (await backend.updateFlow(env, flow, { displayName, definition, connectionReferences, state })).fold(
+            (err) => {
+              throw appErrorToThrowable(err)
+            },
+            () => confirmWrite("update_flow", { environment: env, flow }),
+          ),
+      )
+    },
+  })
+
+  server.addTool({
+    name: "delete_flow",
+    description: [
+      `Permanently delete a flow (DELETE .../flows/{flow})${gated}.`,
+      "Parameters: flow (required); confirm (must be true — guard against accidents); environment (optional). This cannot be undone.",
+      DISCLAIMER,
+    ].join("\n"),
+    annotations: { destructiveHint: true, title: "Delete flow" },
+    parameters: z.object({
+      environment: ENV_PARAM,
+      flow: z.string().describe("Flow GUID name (from list_flows)."),
+      confirm: z.boolean().describe("Must be true to actually delete."),
+    }),
+    execute: async ({ environment, flow, confirm }) => {
+      ensureWriteEnabled(opts.enableWrite, "delete_flow")
+      if (!confirm) {
+        throw new Error("delete_flow requires confirm=true — no flow was deleted.")
+      }
+      return (await resolveEnvironment(backend, opts.defaultEnvironment, environment)).fold(
+        (err) => {
+          throw appErrorToThrowable(err)
+        },
+        async (env) =>
+          (await backend.deleteFlow(env, flow)).fold(
+            (err) => {
+              throw appErrorToThrowable(err)
+            },
+            () => confirmWrite("delete_flow", { environment: env, flow }),
+          ),
+      )
+    },
+  })
 }

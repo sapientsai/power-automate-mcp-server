@@ -39,6 +39,9 @@ describe("createPowerAutomateServer", () => {
     const tools = server.getCapabilities().tools
     const names = tools.map((t) => t.name)
     for (const name of [
+      "create_flow",
+      "update_flow",
+      "delete_flow",
       "enable_flow",
       "disable_flow",
       "cancel_flow_run",
