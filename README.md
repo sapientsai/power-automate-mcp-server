@@ -47,6 +47,11 @@ On first use the server prints a device-code prompt to **stderr**; open
 }
 ```
 
+**Developing on this repo?** It ships a project-scoped [`.mcp.json`](.mcp.json) (stdio, local
+`dist/bin.js`). After `pnpm build`, export `AZURE_CLIENT_ID` and open the repo in Claude Code —
+the `power-automate` server loads automatically (complete the device-code sign-in once; the
+cached token is then reused).
+
 ## App registration
 
 This server ships **no** default client id — you register your own (one‑time):

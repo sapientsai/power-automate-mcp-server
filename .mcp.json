@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "power-automate": {
+      "command": "node",
+      "args": ["dist/bin.js", "--stdio"],
+      "env": {
+        "AZURE_CLIENT_ID": "${AZURE_CLIENT_ID}",
+        "AZURE_TENANT_ID": "common"
+      }
+    }
+  }
+}
