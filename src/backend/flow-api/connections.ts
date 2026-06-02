@@ -9,7 +9,7 @@ import type { Either } from "functype"
 
 import type { FlowApiError } from "../../errors.js"
 import type { Connection } from "../types.js"
-import type { FlowApiClient } from "./client.js"
+import { type FlowApiClient, POWER_APPS_BASE } from "./client.js"
 
 type RawApi = { name?: string; displayName?: string }
 type RawStatus = { status?: string }
@@ -57,6 +57,7 @@ export const listConnections = async (
   const result = await client.request<ListEnvelope<RawConnection>>(
     "GET",
     `/environments/${encodeURIComponent(env)}/connections`,
+    { baseUrl: POWER_APPS_BASE },
   )
   return result.map((envelope) => (envelope.value ?? []).map(mapConnection))
 }

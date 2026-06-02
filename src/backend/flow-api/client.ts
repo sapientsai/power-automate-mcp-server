@@ -21,7 +21,14 @@ export type RequestOptions = {
   body?: unknown
   /** Override the default 2016-11-01 api-version for an endpoint that needs a newer one. */
   apiVersion?: string
+  /** Override the provider base (e.g. connections live under Microsoft.PowerApps, not ProcessSimple). */
+  baseUrl?: string
 }
+
+/** Default provider base — most Flow endpoints. */
+export const PROCESS_SIMPLE_BASE = BASE_URL
+/** Connections (and some other resources) live under the PowerApps provider. */
+export const POWER_APPS_BASE = "https://api.flow.microsoft.com/providers/Microsoft.PowerApps"
 
 export type FlowApiClient = {
   request: <T>(method: HttpMethod, path: string, options?: RequestOptions) => Promise<Either<FlowApiError, T>>
@@ -40,7 +47,7 @@ const statusToKind = (status: number): FlowApiErrorKind => {
 }
 
 const buildUrl = (path: string, options: RequestOptions): string => {
-  const url = new URL(`${BASE_URL}${path}`)
+  const url = new URL(`${options.baseUrl ?? BASE_URL}${path}`)
   url.searchParams.set("api-version", options.apiVersion ?? DEFAULT_API_VERSION)
   if (options.query) {
     for (const [key, value] of Object.entries(options.query)) {

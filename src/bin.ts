@@ -21,20 +21,40 @@ import { createPowerAutomateServer } from "./index.js"
  * exit. Use this in a terminal to pre-auth — the cached token then feeds the MCP server when
  * an MCP client spawns it over stdio (where the device-code prompt would otherwise be hidden).
  */
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
 const runLogin = async (config: Parameters<typeof createPowerAutomateServer>[0]): Promise<void> => {
   console.error("[power-automate] starting sign-in — follow the device-code prompt below…\n")
-  const result = await createTokenManager(config, { log: (m) => console.error(m) }).getToken()
-  result.fold(
-    (err) => {
-      console.error(`\n[power-automate] sign-in FAILED: ${err.message}`)
-      process.exit(1)
-    },
-    () => {
-      console.error("\n[power-automate] sign-in OK — token cached. The winning scope is logged above.")
-      console.error(`[power-automate] cache: ${config.tokenCachePath}`)
-      process.exit(0)
-    },
-  )
+  const tokenManager = createTokenManager(config, { log: (m) => console.error(m) })
+
+  // getToken issues the device code and returns immediately with `device_code_pending` while
+  // the token completes in the background. Poll it until the cached token appears (success) or
+  // a non-pending error occurs.
+  let promptShown = false
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const result = await tokenManager.getToken()
+    const finished = result.fold(
+      (err): boolean => {
+        if (err.reason === "device_code_pending") {
+          if (!promptShown) {
+            console.error(`\n${err.message}\n`)
+            promptShown = true
+          }
+          return false
+        }
+        console.error(`\n[power-automate] sign-in FAILED: ${err.message}`)
+        process.exit(1)
+      },
+      (): boolean => {
+        console.error("\n[power-automate] sign-in OK — token cached.")
+        console.error(`[power-automate] cache: ${config.tokenCachePath}`)
+        process.exit(0)
+      },
+    )
+    if (!finished) await sleep(3000)
+  }
+  console.error("\n[power-automate] sign-in timed out waiting for completion.")
+  process.exit(1)
 }
 
 const main = async (): Promise<void> => {

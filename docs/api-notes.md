@@ -19,6 +19,46 @@ Default api-version: `2016-11-01`
 | 8   | **PUT permissions body** for `add_flow_owner` — the exact payload shape. v1 sends `{ properties: { principal: { id, type:"User" }, roleName } }`.                      | ❓ unverified | _adjust if the API rejects it_                            |
 | 9   | **resubmit path** — `.../triggers/{trigger}/histories/{run}/resubmit`. Confirm trigger name source (from `get_flow` definition triggers).                              | ❓ unverified |                                                           |
 
+## Verified findings — first real run (2026-06-02, Civala tenant)
+
+Ran against tenant `4d68a3d9-…` (civala.com) reusing the `Civala-Microsoft365-MCP` app
+(`7094d3e5-…`). 6 of 7 read tools work.
+
+**Auth — the full chain that actually works (and the four walls hit getting there):**
+
+1. **Tenant must be specific, not `common`.** `common` + a resource `.default` scope →
+   `AADSTS50059: No tenant-identifying information`. Worse: **MSAL 5.2.2 swallows that 400 and
+   fires `deviceCodeCallback` with an all-`undefined` response object** (no error), which looks
+   like a broken SDK. Set `AZURE_TENANT_ID` to a real tenant GUID for interactive Flow.
+2. **App needs the _Microsoft Flow Service_ delegated permission** (resource app id
+   `7df0a125-d3be-4c96-aa54-591f83ff541c`). Without it → `AADSTS650057: Invalid resource`.
+   Added `Flows.Read.All` + `Flows.Manage.All` via `az ad app permission add` + admin-consent.
+3. **Don't use `.default` on a shared/incremental-consent app.** `…/.default` validates _every_
+   granted permission on the app against its manifest; the MS365 app had an incrementally-
+   consented Graph grant (`Chat.ReadWrite.All`) not in the manifest → `AADSTS650051`. Fix: request
+   **specific** scopes. **Winning scopes:** `https://service.flow.microsoft.com/Flows.Read.All` +
+   `…/Flows.Manage.All` (pinned via `FLOW_SCOPES`). `.default` is still fine for a _dedicated_ app.
+4. **"Allow public client flows" must be ON** (`isFallbackPublicClient=true`). Off → the
+   `/devicecode` call issues a code but token redemption fails with `invalid_client` (AAD wants a
+   secret). `az ad app update --id <app> --set isFallbackPublicClient=true`.
+
+Takeaway: a **dedicated public-client app** with only the Flow delegated perms would have avoided
+walls #3 and the shared-app risk. Reusing the MS365 app works but couples the two.
+
+**Per-tool results:**
+
+| Tool                | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_environments` | ✅ default env present, `isDefault:true`, id `Default-<tenantId>` (resolves #5)                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `list_flows`        | ✅ personal flows surface (resolves #3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `get_flow`          | ✅ full `definition`, `connectionReferences`, parsed trigger/action names                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `list_flow_runs`    | ✅ status + computed `durationMs`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `get_flow_run`      | ✅ `raw` has trigger + input/output links; **no per-action `actions` array** — action-level detail needs a follow-up call `…/runs/{run}/actions` (resolves #7)                                                                                                                                                                                                                                                                                                                                                                                |
+| `list_flow_owners`  | ✅ `roleName` works; the API does **not** return `principalDisplayName` (only the id)                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `list_connections`  | ❌ **404 on every tried endpoint** (ProcessSimple + PowerApps `/connections`, `$filter`, `/scopes/admin/...`, apis-scoped, api-version 2016/2020 — see `scripts/diag-connections.mjs`). Modern Power Platform connections appear to live on the **per-environment `*.environment.api.powerplatform.com`** host (seen in a run's `inputsLink`) and/or need the **PowerApps audience**. **Deferred** — needs a different host+audience, not just a path. The client now supports a `baseUrl` override (`POWER_APPS_BASE`) for when it's solved. |
+
+404 → `not_found` mapping confirmed correct (#6 partially).
+
 ## If the Flow audience can't be obtained by a custom public client
 
 The token-audience question (#1) is the make-or-break unknown. Fallback plans:

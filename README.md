@@ -72,19 +72,38 @@ permissions with **admin consent**, and set `AZURE_AUTH_MODE=clientCredentials`,
 `AZURE_TENANT_ID=<your tenant>`, `AZURE_CLIENT_SECRET=...`. Note app‑only has **limited Flow
 reach** (it generally cannot see personal "My Flows").
 
-### Token audience — verify on first run ⚠️
+### Verified working setup ⚠️
 
-The exact OAuth scope that mints a token for the `service.flow.microsoft.com` audience from a
-_custom_ public client is **the #1 thing to confirm**. The server tries these in order at
-first sign‑in and logs the winner to stderr/telemetry:
+Confirmed against a real tenant. Interactive Flow auth needs **all four** of these — each one,
+if missing, fails with a different cryptic `AADSTS…` (details in [`docs/api-notes.md`](docs/api-notes.md)):
 
-1. `https://service.flow.microsoft.com//.default` (double slash is intentional in some samples)
-2. `https://service.flow.microsoft.com/.default`
-3. `https://service.flow.microsoft.com/User`
+1. **A specific tenant** — `AZURE_TENANT_ID=<your-tenant-GUID>`, **not `common`**. `common` + a
+   resource scope → `AADSTS50059` (and MSAL hides it as an empty device-code response).
+2. **The _Microsoft Flow Service_ delegated permission** on the app (resource app id
+   `7df0a125-d3be-4c96-aa54-591f83ff541c`). Missing → `AADSTS650057`.
+3. **Specific scopes, not `.default`**, when reusing an app that has other (incrementally
+   consented) permissions — `.default` validates the whole app and can fail with `AADSTS650051`.
+   A _dedicated_ app may use `.default`. Pin via `FLOW_SCOPES`.
+4. **"Allow public client flows" = Yes** (`isFallbackPublicClient=true`). Off → token redemption
+   fails with `invalid_client`.
 
-Pin the winner via `FLOW_SCOPES` and record it in [`docs/api-notes.md`](docs/api-notes.md).
-If none work, the _Microsoft Flow Service_ delegated permission likely isn't grantable to a
-third‑party app in your tenant — a tenant admin must add it (see `docs/api-notes.md` Plan B/C).
+Verified `FLOW_SCOPES`:
+`https://service.flow.microsoft.com/Flows.Read.All,https://service.flow.microsoft.com/Flows.Manage.All`
+
+#### Configure an existing app via `az`
+
+```bash
+APP=<your-app-client-id>; FLOW=7df0a125-d3be-4c96-aa54-591f83ff541c
+# Flows.Read.All + Flows.Manage.All (delegated), then tenant-wide consent:
+az ad app permission add --id "$APP" --api "$FLOW" --api-permissions \
+  e45c5562-459d-4d1b-8148-83eb1b6dcf83=Scope 30b2d850-00c3-4802-b7ae-ece9af9de5c6=Scope
+az ad app permission admin-consent --id "$APP"
+# enable device-code (public client flows):
+az ad app update --id "$APP" --set isFallbackPublicClient=true
+```
+
+> **Recommended:** a **dedicated** public-client app with only the Flow delegated permissions
+> avoids the `.default`/shared-app pitfalls (#3) entirely — cleaner than reusing a Graph app.
 
 ## Tools
 

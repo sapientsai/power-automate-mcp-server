@@ -49,12 +49,22 @@ type Current = {
 
 const errMsg = (e: unknown): string => {
   // MSAL errors carry the actionable detail (incl. the AADSTS code) on errorCode/errorMessage,
-  // not the generic .message. Surface all of it so first-sign-in failures are diagnosable.
+  // not the generic .message. Surface all of it — plus correlationId and any underlying cause —
+  // so first-sign-in failures are diagnosable from the tool result alone.
   if (e && typeof e === "object") {
-    const m = e as { errorCode?: string; errorMessage?: string; subError?: string; message?: string }
+    const m = e as {
+      errorCode?: string
+      errorMessage?: string
+      subError?: string
+      correlationId?: string
+      message?: string
+      cause?: unknown
+    }
     const parts = [m.errorCode, m.subError, m.errorMessage].filter((p): p is string => Boolean(p))
-    if (parts.length > 0) return parts.join(" / ")
-    if (m.message) return m.message
+    let base = parts.length > 0 ? parts.join(" / ") : (m.message ?? String(e))
+    if (m.correlationId) base += ` [cid ${m.correlationId}]`
+    if (m.cause && m.cause !== e) base += ` | cause: ${errMsg(m.cause)}`
+    return base
   }
   return e instanceof Error ? e.message : String(e)
 }
@@ -114,16 +124,24 @@ const createClientCredentialsManager = (config: ServerConfig, log: (m: string) =
 // ── interactive (device code) ─────────────────────────────────────────
 
 const createInteractiveManager = (config: ServerConfig, log: (m: string) => void): TokenProvider => {
+  if (config.tenantId === "common") {
+    log(
+      "[auth] warning: AZURE_TENANT_ID=common typically FAILS for the Flow audience (AADSTS50059, surfaced by MSAL as an empty device-code response). Set a specific tenant GUID.",
+    )
+  }
   const app = new PublicClientApplication({
     auth: { clientId: config.clientId, authority: authorityFor(config.tenantId) },
     cache: { cachePlugin: createFileCachePlugin(config.tokenCachePath) },
   })
   // `pending` holds an in-flight device-code sign-in: the user-facing prompt plus the
   // background promise that caches the token once the user completes the browser step.
-  const state: { current: Current | null; pending: { message: string; promise: Promise<void> } | null } = {
-    current: null,
-    pending: null,
-  }
+  // `completionError` captures a background redemption failure so the next call can report it
+  // instead of silently starting a fresh sign-in.
+  const state: {
+    current: Current | null
+    pending: { message: string; promise: Promise<void> } | null
+    completionError: string | null
+  } = { current: null, pending: null, completionError: null }
 
   const trySilent = async (): Promise<Either<AuthError, string>> => {
     const accounts = (await Try.fromPromise(app.getTokenCache().getAllAccounts())).fold(
@@ -169,7 +187,13 @@ const createInteractiveManager = (config: ServerConfig, log: (m: string) => void
         .acquireTokenByDeviceCode({
           scopes,
           deviceCodeCallback: (response) => {
-            box.message = response.message
+            // Prefer MSAL's ready-made message; fall back to building it from the code + URL.
+            const r = response as { message?: string; userCode?: string; verificationUri?: string }
+            box.message =
+              r.message ??
+              (r.userCode
+                ? `To sign in, open ${r.verificationUri ?? "https://microsoft.com/devicelogin"} in a browser and enter the code: ${r.userCode}`
+                : "Device sign-in started — check the server logs for the code.")
             signalMessage()
           },
         })
@@ -177,6 +201,7 @@ const createInteractiveManager = (config: ServerConfig, log: (m: string) => void
           (auth): void => {
             if (auth) {
               state.current = toCurrent(auth, scopes)
+              state.completionError = null
               log(`[auth] acquired Flow token (device code) using scope: ${scopes.join(" ")}`)
               box.outcome = Right(auth.accessToken)
             } else {
@@ -186,6 +211,8 @@ const createInteractiveManager = (config: ServerConfig, log: (m: string) => void
           },
           (err): void => {
             lastError = errMsg(err)
+            state.completionError = lastError
+            log(`[auth] device-code completion failed: ${lastError}`)
             box.outcome = leftAuth(`device-code completion failed: ${lastError}`, "device_code_failed")
             state.pending = null
           },
@@ -225,6 +252,14 @@ const createInteractiveManager = (config: ServerConfig, log: (m: string) => void
         `Authorization pending. ${state.pending.message} Call the tool again once you've completed sign-in.`,
         "device_code_pending",
       )
+    }
+
+    // A previous sign-in completed in the browser but failed at token redemption — surface the
+    // real reason once (then clear it so the next call can retry).
+    if (state.completionError) {
+      const reason = state.completionError
+      state.completionError = null
+      return leftAuth(`The previous sign-in did not complete: ${reason}`, "device_code_failed")
     }
 
     return beginDeviceCode()
