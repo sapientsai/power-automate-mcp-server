@@ -1,6 +1,6 @@
 {
   "name": "power-automate-mcp-server",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "MCP server to inspect and operate Microsoft Power Automate cloud flows (list, debug runs, enable/disable, owners) via the api.flow.microsoft.com management surface.",
   "keywords": [
     "mcp",
