@@ -60,7 +60,8 @@
     "start": "node dist/bin.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/bin.js",
     "build:mcpb": "./scripts/build-mcpb.sh",
-    "prepublishOnly": "pnpm validate"
+    "check:versions": "tsx scripts/check-versions.ts",
+    "prepublishOnly": "pnpm check:versions && pnpm validate"
   },
   "dependencies": {
     "@azure/msal-node": "^5.2.2",
