@@ -83,9 +83,30 @@ telemetry, health/info/dashboard, Docker, docs.
 no terminal), all 7 read tools, and the full create→edit→delete authoring round-trip. The
 auth maze (specific tenant + Flow Service delegated perm + specific scopes not `.default` +
 public-client flows) and the connections endpoint (per-env regional PowerApps host) are
-solved and recorded in `docs/api-notes.md`. First npm publish is manual.
+solved and recorded in `docs/api-notes.md`.
+
+**Published `v0.1.1`** (2026-06-03): npm (`power-automate-mcp-server`, OIDC provenance), MCP
+registry (`io.github.sapientsai/power-automate-mcp-server`, active), and a Claude Desktop
+`.mcpb` attached to the GitHub release. Tag-driven: `npm version patch` → `git push
+--follow-tags` runs `.github/workflows/publish.yml` (npm idempotent + registry via
+mcp-publisher v1.7.9). Versions kept in lockstep across package.json / manifest.json /
+server.json / src/version.ts by `scripts/{check,sync}-versions.ts` (check:versions in
+prepublishOnly + the npm `version` lifecycle).
 
 Gotchas baked in: `common` tenant + Flow `.default` → AADSTS50059 (MSAL hides it as an empty
 device-code response); connections aren't on `api.flow.microsoft.com` (regional PowerApps
 host via `runtimeEndpoints`); mutations return empty 200 bodies (client treats empty 2xx as
-success).
+success); server.json description must be ≤100 chars (registry rejects longer).
+
+## Open follow-ups (see GitHub issues)
+
+- `run_flow` tool — on-demand trigger of a manual/button flow (listCallbackUrl + POST). The
+  only thing scripts (`scripts/diag-*.mjs`) still do that the server can't.
+- `clientCredentials` (app-only) mode built but never run against a real tenant (api-notes #4).
+- Live-verify the untested write tools: `cancel_flow_run`, `resubmit_flow_run`,
+  `add_flow_owner` (+ confirm its PUT body shape — api-notes #8), `remove_flow_owner`.
+- Committed `.mcp.json` still defaults `AZURE_TENANT_ID` to `common` (a Flow footgun). Jordan's
+  local copy uses `${MS365_*}` + `FLOW_SCOPES` + `ENABLE_WRITE_OPS=true` and is intentionally
+  uncommitted.
+- Publish workflow actions run on deprecated Node 20 (checkout/setup-node/etc.).
+- Consider a dedicated public-client app instead of reusing `Civala-Microsoft365-MCP`.
