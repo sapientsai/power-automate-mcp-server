@@ -1,3 +1,15 @@
+# pnpm 11 strictDepBuilds: explicit decisions on dependency build scripts.
+# Both denied — the build (tsdown/rolldown) doesn't need them, and the
+# previously-green pnpm 10 CI ran with these scripts ignored.
+allowBuilds:
+  esbuild: false
+  tldjs: false
+
+# Disable pnpm 11's minimum-release-age supply-chain gate. The whole dependency
+# tree (functype ecosystem + rolldown binaries) was (re)published within the last
+# 24h, which the default 1-day gate rejects even on a frozen install.
+minimumReleaseAge: 0
+
 publicHoistPattern:
   - "*eslint*"
   - "*prettier*"
