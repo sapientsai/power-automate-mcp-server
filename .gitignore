@@ -41,3 +41,8 @@ node_modules/
 
 # Claude Code
 .claude/settings.local.json
+
+# MCPB desktop extension build + MCP registry auth tokens
+*.mcpb
+bundle-temp/
+.mcpregistry_*

@@ -14,6 +14,7 @@
   ],
   "author": "jordan.burke@gmail.com",
   "license": "MIT",
+  "mcpName": "io.github.sapientsai/power-automate-mcp-server",
   "homepage": "https://github.com/sapientsai/power-automate-mcp-server",
   "repository": {
     "type": "git",
@@ -58,6 +59,7 @@
     "dev:stdio": "tsx watch src/bin.ts --stdio",
     "start": "node dist/bin.js",
     "inspect": "npx @modelcontextprotocol/inspector node dist/bin.js",
+    "build:mcpb": "./scripts/build-mcpb.sh",
     "prepublishOnly": "pnpm validate"
   },
   "dependencies": {
