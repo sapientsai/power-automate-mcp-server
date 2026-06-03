@@ -15,6 +15,9 @@ services:
       # at https://microsoft.com/devicelogin. The token persists in the mounted volume below.
       - AZURE_AUTH_MODE=${AZURE_AUTH_MODE:-interactive}
       - TRANSPORT=http
+      # Bind all interfaces so the published port is reachable from the host (fastmcp
+      # otherwise resolves "localhost" to IPv6 ::1, which the port-forward can't reach).
+      - HOST=${HOST:-0.0.0.0}
       - PORT=3333
       - ENDPOINT=${ENDPOINT:-/mcp}
       - TOKEN_CACHE_PATH=/data/token.json

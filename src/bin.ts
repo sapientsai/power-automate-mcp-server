@@ -75,9 +75,9 @@ const main = async (): Promise<void> => {
       if (transport === "http") {
         await server.start({
           transportType: "httpStream",
-          httpStream: { port: config.port, endpoint: config.endpoint },
+          httpStream: { host: config.host, port: config.port, endpoint: config.endpoint },
         })
-        console.error(`[power-automate] listening on http://localhost:${config.port}${config.endpoint}`)
+        console.error(`[power-automate] listening on http://${config.host}:${config.port}${config.endpoint}`)
       } else {
         await server.start({ transportType: "stdio" })
         console.error("[power-automate] running on stdio")

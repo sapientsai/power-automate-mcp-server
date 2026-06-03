@@ -33,8 +33,10 @@ const parseAuthMode = (value: string | undefined): Either<ConfigError, AuthMode>
 
 const parseTransport = (value: string | undefined): Either<ConfigError, TransportKind> => {
   if (!value || value === "stdio") return Right("stdio")
-  if (value === "http") return Right("http")
-  return Left(configError(`Invalid TRANSPORT: "${value}". Must be "stdio" or "http".`))
+  // Accept "httpStream" as an alias for "http" to align with the sibling MCP servers
+  // (e.g. patents-mcp-server), which surface the underlying fastmcp transport name.
+  if (value === "http" || value === "httpStream") return Right("http")
+  return Left(configError(`Invalid TRANSPORT: "${value}". Must be "stdio", "http", or "httpStream".`))
 }
 
 const parseTelemetry = (value: string | undefined): ReadonlyArray<TelemetrySink> =>
@@ -93,6 +95,10 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): Either<ConfigE
         flowScopes,
         tokenCachePath: expandHome(env.TOKEN_CACHE_PATH?.trim() || "~/.cache/power-automate-mcp/token.json"),
         transport,
+        // Default 0.0.0.0 so the HTTP transport is reachable through a container port-forward.
+        // FastMCP otherwise resolves "localhost" to ::1 (IPv6-only), which a Docker publish and
+        // the IPv4 healthcheck can't reach. Override with HOST for a narrower bind.
+        host: env.HOST?.trim() || "0.0.0.0",
         port: parsePort(env.PORT),
         endpoint: ensureEndpoint(env.ENDPOINT),
         mcpApiKey: env.MCP_API_KEY?.trim() || undefined,

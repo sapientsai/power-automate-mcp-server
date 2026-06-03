@@ -29,6 +29,9 @@ COPY --from=builder /app/dist ./dist
 # HTTP server mode. Device-code sign-in prints to stderr (docker logs); the token
 # cache should be mounted to a volume (see docker-compose.yml) so auth survives restarts.
 ENV TRANSPORT=http
+# Bind all interfaces — fastmcp otherwise resolves "localhost" to IPv6 ::1, which a
+# published port and the IPv4 HEALTHCHECK below can't reach.
+ENV HOST=0.0.0.0
 ENV PORT=3333
 ENV TOKEN_CACHE_PATH=/data/token.json
 

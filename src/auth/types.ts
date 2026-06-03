@@ -60,6 +60,8 @@ export type ServerConfig = {
 
   // Transport
   readonly transport: TransportKind
+  /** Bind address for the HTTP transport. Defaults to 0.0.0.0 so containers are reachable. */
+  readonly host: string
   readonly port: number
   readonly endpoint: `/${string}`
   /** Bearer token that protects the HTTP operational endpoints (health/info/dashboard). */

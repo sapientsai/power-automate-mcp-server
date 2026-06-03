@@ -86,4 +86,11 @@ describe("loadConfig", () => {
       },
     )
   })
+
+  it("accepts TRANSPORT=httpStream as an alias for http (sibling-server alignment)", () => {
+    loadConfig(env({ AZURE_CLIENT_ID: "x", TRANSPORT: "httpStream" })).fold(
+      (err) => expect.unreachable(err.message),
+      (cfg) => expect(cfg.transport).toBe("http"),
+    )
+  })
 })

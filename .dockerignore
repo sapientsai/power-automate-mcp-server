@@ -9,6 +9,7 @@ lib/
 .env
 .env.local
 .env.*.local
+.mcp.json
 
 # Local runtime state
 logs/
