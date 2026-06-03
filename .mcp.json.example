@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "power-automate": {
+      "command": "node",
+      "args": ["dist/bin.js", "--stdio"],
+      "env": {
+        "AZURE_CLIENT_ID": "${MS365_CLIENT_ID}",
+        "AZURE_TENANT_ID": "${MS365_TENANT_ID}",
+        "FLOW_SCOPES": "https://service.flow.microsoft.com/Flows.Read.All,https://service.flow.microsoft.com/Flows.Manage.All",
+        "ENABLE_WRITE_OPS": "false"
+      }
+    }
+  }
+}

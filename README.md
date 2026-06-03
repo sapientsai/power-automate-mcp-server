@@ -167,6 +167,16 @@ See [`.env.example`](.env.example) for the full list. Highlights: `AZURE_CLIENT_
 | Docker, single operator | `http`    | device-code + **mounted token volume** | Auth once via `docker logs`; persists. Full reach. `docker compose up`.      |
 | Docker, unattended      | `http`    | `clientCredentials`                    | No human, but **no personal flows**; verify it can mint a Flow token at all. |
 
+> [!WARNING]
+> **The HTTP transport is single-operator.** Every caller shares one Power Automate
+> identity: the server holds a single process-wide token (one device-code sign-in, or one
+> app identity), and `MCP_API_KEY` is a shared static bearer that gates _access_, not
+> _identity_. Do **not** expose the HTTP endpoint to multiple users expecting per-user
+> separation — they would all see and mutate the same person's flows. For per-user
+> isolation, run **stdio** (one process per user, how Claude Desktop already runs it) or
+> wait for the v2 per-user OAuth path
+> ([#9](https://github.com/sapientsai/power-automate-mcp-server/issues/9)).
+
 > **v2:** per‑user browser OAuth over HTTP via FastMCP's `AzureProvider` + disk token cache
 > (the upstream token surfaces on the session). Reachable through SomaMCP's `backendOptions`
 > passthrough without a fork — not wired in v1.

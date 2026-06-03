@@ -46,3 +46,5 @@ node_modules/
 *.mcpb
 bundle-temp/
 .mcpregistry_*
+# Local MCP client config — copy from .mcp.json.example, keep secrets/tenant local
+.mcp.json
