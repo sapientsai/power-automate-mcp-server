@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "power-automate-mcp-server",
   "display_name": "Power Automate MCP Server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Inspect, operate, and author Microsoft Power Automate cloud flows from Claude Desktop.",
   "long_description": "Power Automate MCP Server lets you manage Microsoft Power Automate cloud flows directly from Claude Desktop — and lightly author them too.\n\n**Read / debug (always on):**\n- List environments, flows, and connections (with broken-connection detection)\n- Inspect a flow's full definition (triggers, actions, connection references)\n- List and drill into runs — status, timing, first-failure detail\n- List flow owners\n\n**Operate & author (enable write ops):**\n- Enable / disable flows\n- Cancel / resubmit runs\n- Add / remove owners\n- Create / update / delete flows (programmatic authoring)\n\n**How it works:**\n- Per-user **device-code sign-in** that surfaces the code right in the chat — no terminal.\n- Targets the `api.flow.microsoft.com` management surface (sees personal \"My Flows\"; no Premium license needed).\n- Read-only by default; mutating tools are gated behind a single setting, and delete requires explicit confirmation.\n\n**Setup:** you supply your own Azure app registration (multi-tenant public client with the Microsoft Flow Service delegated permission and public-client flows enabled) — see the README.",
   "author": {
@@ -32,23 +32,74 @@
     }
   },
   "tools": [
-    { "name": "list_environments", "description": "List Power Automate environments" },
-    { "name": "list_flows", "description": "List cloud flows in an environment" },
-    { "name": "get_flow", "description": "Get a flow's full definition" },
-    { "name": "list_flow_runs", "description": "List recent runs of a flow" },
-    { "name": "get_flow_run", "description": "Get one run in detail for debugging" },
-    { "name": "list_connections", "description": "List connections and their health" },
-    { "name": "list_flow_owners", "description": "List a flow's owners" },
-    { "name": "create_flow", "description": "Create a new flow (write-gated)" },
-    { "name": "update_flow", "description": "Update a flow's properties/definition (write-gated)" },
-    { "name": "delete_flow", "description": "Delete a flow (write-gated, confirm required)" },
-    { "name": "enable_flow", "description": "Turn a flow on (write-gated)" },
-    { "name": "disable_flow", "description": "Turn a flow off (write-gated)" },
-    { "name": "cancel_flow_run", "description": "Cancel an in-progress run (write-gated)" },
-    { "name": "resubmit_flow_run", "description": "Resubmit a run (write-gated)" },
-    { "name": "add_flow_owner", "description": "Grant a principal a role on a flow (write-gated)" },
-    { "name": "remove_flow_owner", "description": "Revoke a principal's access (write-gated)" },
-    { "name": "report_feedback", "description": "Report a bug or API drift to the maintainers" }
+    {
+      "name": "list_environments",
+      "description": "List Power Automate environments"
+    },
+    {
+      "name": "list_flows",
+      "description": "List cloud flows in an environment"
+    },
+    {
+      "name": "get_flow",
+      "description": "Get a flow's full definition"
+    },
+    {
+      "name": "list_flow_runs",
+      "description": "List recent runs of a flow"
+    },
+    {
+      "name": "get_flow_run",
+      "description": "Get one run in detail for debugging"
+    },
+    {
+      "name": "list_connections",
+      "description": "List connections and their health"
+    },
+    {
+      "name": "list_flow_owners",
+      "description": "List a flow's owners"
+    },
+    {
+      "name": "create_flow",
+      "description": "Create a new flow (write-gated)"
+    },
+    {
+      "name": "update_flow",
+      "description": "Update a flow's properties/definition (write-gated)"
+    },
+    {
+      "name": "delete_flow",
+      "description": "Delete a flow (write-gated, confirm required)"
+    },
+    {
+      "name": "enable_flow",
+      "description": "Turn a flow on (write-gated)"
+    },
+    {
+      "name": "disable_flow",
+      "description": "Turn a flow off (write-gated)"
+    },
+    {
+      "name": "cancel_flow_run",
+      "description": "Cancel an in-progress run (write-gated)"
+    },
+    {
+      "name": "resubmit_flow_run",
+      "description": "Resubmit a run (write-gated)"
+    },
+    {
+      "name": "add_flow_owner",
+      "description": "Grant a principal a role on a flow (write-gated)"
+    },
+    {
+      "name": "remove_flow_owner",
+      "description": "Revoke a principal's access (write-gated)"
+    },
+    {
+      "name": "report_feedback",
+      "description": "Report a bug or API drift to the maintainers"
+    }
   ],
   "keywords": ["power-automate", "microsoft-flow", "power-platform", "azure", "mcp", "flows", "automation"],
   "license": "MIT",
