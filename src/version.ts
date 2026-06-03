@@ -3,4 +3,4 @@
  * `${number}.${number}.${number}` shape). Kept in lockstep with package.json by
  * `scripts/sync-versions.ts` (npm version lifecycle) and guarded by `scripts/check-versions.ts`.
  */
-export const PKG_VERSION = "0.2.0" as const
+export const PKG_VERSION = "0.2.1" as const
