@@ -29,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check version consistency (package.json / manifest.json / server.json)
+        run: pnpm check:versions
+
       - name: Validate
         run: pnpm validate
 
