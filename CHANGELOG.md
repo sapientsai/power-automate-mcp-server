@@ -18,6 +18,12 @@ All notable changes to this project are documented here. The format is based on
   `./logs/events.ndjson`, so it never litters or fails in an unpredictable cwd (`.mcpb`,
   `npx … --stdio`).
 
+### Changed
+
+- Bumped `somamcp` to `^1.0.10`, which fixes the same stdout corruption at the **framework
+  layer** (its console telemetry + default logger now route to stderr). Our consumer-side
+  guard stays as defense-in-depth for anyone on an older `somamcp`.
+
 ## [0.2.0] - 2026-06-03
 
 ### Fixed
