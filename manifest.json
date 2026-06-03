@@ -19,10 +19,7 @@
     "entry_point": "dist/bin.js",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/dist/bin.js",
-        "--stdio"
-      ],
+      "args": ["${__dirname}/dist/bin.js", "--stdio"],
       "env": {
         "AZURE_CLIENT_ID": "${user_config.azure_client_id}",
         "AZURE_TENANT_ID": "${user_config.azure_tenant_id}",
@@ -104,15 +101,7 @@
       "description": "Report a bug or API drift to the maintainers"
     }
   ],
-  "keywords": [
-    "power-automate",
-    "microsoft-flow",
-    "power-platform",
-    "azure",
-    "mcp",
-    "flows",
-    "automation"
-  ],
+  "keywords": ["power-automate", "microsoft-flow", "power-platform", "azure", "mcp", "flows", "automation"],
   "license": "MIT",
   "user_config": {
     "azure_client_id": {

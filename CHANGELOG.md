@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-06-03
+
+### Fixed
+
+- **stdio transport corrupted the JSON-RPC stream** (broke the `.mcpb` / Claude Desktop
+  install). The console telemetry sink writes events to stdout — which is the JSON-RPC
+  channel on stdio — so `server.start`/`session.connect` objects landed on stdout and the
+  client disconnected with "Invalid JSON-RPC message". The console sink is now suppressed on
+  the stdio transport (it stays on for HTTP); our own diagnostics already use stderr.
+- The file telemetry sink now defaults to an **absolute** path
+  (`~/.cache/power-automate-mcp/events.ndjson`, like the token cache) instead of
+  `./logs/events.ndjson`, so it never litters or fails in an unpredictable cwd (`.mcpb`,
+  `npx … --stdio`).
+
 ## [0.2.0] - 2026-06-03
 
 ### Fixed
@@ -63,6 +77,7 @@ on the GitHub release.
 - `report_feedback` tool, telemetry sinks, and SomaMCP health/info/dashboard endpoints.
 - Docker (HTTP transport) and a Claude Desktop `.mcpb` extension.
 
+[0.2.1]: https://github.com/sapientsai/power-automate-mcp-server/releases/tag/v0.2.1
 [0.2.0]: https://github.com/sapientsai/power-automate-mcp-server/releases/tag/v0.2.0
 [0.1.1]: https://github.com/sapientsai/power-automate-mcp-server/releases/tag/v0.1.1
 [0.1.0]: https://github.com/sapientsai/power-automate-mcp-server/releases/tag/v0.1.0

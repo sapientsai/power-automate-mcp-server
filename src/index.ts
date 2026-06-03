@@ -20,7 +20,7 @@ import {
 } from "somamcp"
 
 import { createTokenManager } from "./auth/token-manager.js"
-import type { ServerConfig } from "./auth/types.js"
+import type { ServerConfig, TelemetrySink } from "./auth/types.js"
 import { createFlowApiBackend } from "./backend/index.js"
 import { registerConnectionTools } from "./tools/connections.js"
 import { registerEnvironmentTools } from "./tools/environments.js"
@@ -29,11 +29,22 @@ import { registerOwnerReadTools, registerOwnerWriteTools } from "./tools/owners.
 import { registerRunReadTools, registerRunWriteTools } from "./tools/runs.js"
 import { PKG_VERSION } from "./version.js"
 
+/**
+ * Which telemetry sinks are active for a given config. The console sink writes events to
+ * stdout — which IS the JSON-RPC channel on the stdio transport — so it is suppressed there
+ * (emitting on stdout corrupts the protocol and an MCP client like Claude Desktop disconnects
+ * with "Invalid JSON-RPC message"). Our own diagnostics already go to stderr. Exported for tests.
+ */
+export const activeTelemetrySinks = (config: ServerConfig): ReadonlyArray<TelemetrySink> => [
+  ...(config.transport !== "stdio" && config.telemetry.includes("console") ? (["console"] as const) : []),
+  ...(config.telemetry.includes("file") ? (["file"] as const) : []),
+]
+
 const buildTelemetry = (config: ServerConfig): TelemetryCollector | undefined => {
+  const sinks = activeTelemetrySinks(config)
   const collectors: TelemetryCollector[] = []
-  if (config.telemetry.includes("console")) collectors.push(createConsoleTelemetry("[power-automate]"))
-  if (config.telemetry.includes("file"))
-    collectors.push(createJsonFileTelemetry({ filePath: config.telemetryFilePath }))
+  if (sinks.includes("console")) collectors.push(createConsoleTelemetry("[power-automate]"))
+  if (sinks.includes("file")) collectors.push(createJsonFileTelemetry({ filePath: config.telemetryFilePath }))
   if (collectors.length === 0) return undefined
   if (collectors.length === 1) return collectors[0]
   return createCompositeTelemetry(collectors)

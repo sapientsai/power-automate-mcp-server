@@ -105,7 +105,9 @@ export const loadConfig = (env: NodeJS.ProcessEnv = process.env): Either<ConfigE
         enableWriteOps: env.ENABLE_WRITE_OPS === "true",
         defaultEnvironment: env.DEFAULT_ENVIRONMENT?.trim() || undefined,
         telemetry: parseTelemetry(env.TELEMETRY),
-        telemetryFilePath: env.TELEMETRY_FILE?.trim() || "./logs/events.ndjson",
+        // Absolute, writable default (like the token cache) so the file sink never litters or
+        // fails in an unpredictable cwd — e.g. a Claude Desktop .mcpb or `npx … --stdio`.
+        telemetryFilePath: expandHome(env.TELEMETRY_FILE?.trim() || "~/.cache/power-automate-mcp/events.ndjson"),
         logLevel: env.LOG_LEVEL?.trim() || "info",
         feedbackRepo: env.FEEDBACK_GITHUB_REPO?.trim() || "sapientsai/power-automate-mcp-server",
       }
