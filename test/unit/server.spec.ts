@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createPowerAutomateServer, loadConfig } from "../../src/index"
+import { createPowerAutomateServer, loadConfig, PKG_VERSION } from "../../src/index"
 
 const config = loadConfig({ AZURE_CLIENT_ID: "test-client", TELEMETRY: "" } as NodeJS.ProcessEnv).fold(
   (e) => {
@@ -14,7 +14,7 @@ describe("createPowerAutomateServer", () => {
     const server = createPowerAutomateServer(config)
     const info = server.getInfo()
     expect(info.name).toBe("power-automate-mcp")
-    expect(info.version).toBe("0.1.0")
+    expect(info.version).toBe(PKG_VERSION)
     expect(info.capabilities.tools).toBeGreaterThanOrEqual(1)
   })
 

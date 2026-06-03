@@ -79,6 +79,17 @@ function main(): void {
     console.log(`✓ mcpName consistency: ${pkg.mcpName === server.name ? "OK" : "MISMATCH"}`)
   }
 
+  // src/version.ts — the version the server reports to SomaMCP.
+  const versionTsPath = path.join(ROOT, "src/version.ts")
+  if (fs.existsSync(versionTsPath)) {
+    const match = fs.readFileSync(versionTsPath, "utf-8").match(/PKG_VERSION = "(\d+\.\d+\.\d+)"/)
+    const tsVersion = match?.[1]
+    if (tsVersion !== expectedVersion) {
+      errors.push(`src/version.ts: PKG_VERSION is "${tsVersion ?? "unknown"}" (expected "${expectedVersion}")`)
+    }
+    console.log(`✓ src/version.ts: ${tsVersion === expectedVersion ? "OK" : "MISMATCH"}`)
+  }
+
   console.log("")
 
   if (errors.length > 0) {

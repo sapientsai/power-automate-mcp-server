@@ -66,6 +66,19 @@ if (manifest) {
   touched = true
 }
 
+// src/version.ts holds the version the server reports to SomaMCP — rewrite the literal.
+const versionTsPath = path.join(ROOT, "src/version.ts")
+if (fs.existsSync(versionTsPath)) {
+  const before = fs.readFileSync(versionTsPath, "utf-8")
+  const after = before.replace(/(PKG_VERSION = ")\d+\.\d+\.\d+(")/, `$1${version}$2`)
+  if (after !== before) {
+    fs.writeFileSync(versionTsPath, after)
+    stage("src/version.ts")
+    console.log(`✓ src/version.ts synced to ${version}`)
+    touched = true
+  }
+}
+
 if (!touched) {
   console.log("No side-channel manifests to sync.")
 }

@@ -1,5 +1,6 @@
 /**
- * Single source of truth for the server version reported to SomaMCP (which requires the
- * strict `${number}.${number}.${number}` shape). Keep in sync with package.json on release.
+ * Version the server reports to SomaMCP (which requires the strict
+ * `${number}.${number}.${number}` shape). Kept in lockstep with package.json by
+ * `scripts/sync-versions.ts` (npm version lifecycle) and guarded by `scripts/check-versions.ts`.
  */
-export const PKG_VERSION = "0.1.0" as const
+export const PKG_VERSION = "0.1.1" as const
