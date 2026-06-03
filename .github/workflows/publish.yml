@@ -41,7 +41,15 @@ jobs:
           npm pack --dry-run
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        # Idempotent: skip if this version is already on npm (so the registry step can be
+        # re-run for a release where npm already succeeded, and to tolerate a manual prepublish).
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "power-automate-mcp-server@${VERSION}" version >/dev/null 2>&1; then
+            echo "power-automate-mcp-server@${VERSION} is already on npm — skipping publish."
+          else
+            npm publish --provenance --access public
+          fi
 
       - name: Build Claude Desktop Extension (.mcpb)
         run: |

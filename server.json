@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.sapientsai/power-automate-mcp-server",
-  "description": "Inspect, operate, and author Microsoft Power Automate cloud flows via the api.flow.microsoft.com management surface.",
+  "description": "Inspect, operate, and author Microsoft Power Automate cloud flows from an agent context.",
   "repository": {
     "url": "https://github.com/sapientsai/power-automate-mcp-server",
     "source": "github"
