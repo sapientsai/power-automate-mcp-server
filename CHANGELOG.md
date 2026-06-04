@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-06-04
+
+### Fixed
+
+- **Un-interpolated `.mcpb` placeholders leaked into config.** When an optional Claude Desktop
+  field was left blank, the host passed the literal `"${user_config.<field>}"` through as the
+  env var. `DEFAULT_ENVIRONMENT` then put that placeholder straight into the Flow API path,
+  400ing every call that omitted `environment` (despite the tool schemas saying omitting it
+  uses the default). `loadConfig` now treats any value that is wholly an un-interpolated
+  `${...}` placeholder as absent — blank optional fields fall back to their defaults, and a
+  blank required field reports its normal "required" error. The match is anchored, so real
+  values containing braces are untouched.
+
 ## [0.2.1] - 2026-06-03
 
 ### Fixed
@@ -83,6 +96,7 @@ on the GitHub release.
 - `report_feedback` tool, telemetry sinks, and SomaMCP health/info/dashboard endpoints.
 - Docker (HTTP transport) and a Claude Desktop `.mcpb` extension.
 
+[0.2.2]: https://github.com/sapientsai/power-automate-mcp-server/releases/tag/v0.2.2
 [0.2.1]: https://github.com/sapientsai/power-automate-mcp-server/releases/tag/v0.2.1
 [0.2.0]: https://github.com/sapientsai/power-automate-mcp-server/releases/tag/v0.2.0
 [0.1.1]: https://github.com/sapientsai/power-automate-mcp-server/releases/tag/v0.1.1
