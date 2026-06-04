@@ -93,4 +93,47 @@ describe("loadConfig", () => {
       (cfg) => expect(cfg.transport).toBe("http"),
     )
   })
+
+  // A blank optional .mcpb field is passed through as the literal "${user_config.X}" placeholder
+  // by Claude Desktop. These must be treated as unset, not used verbatim (which 400'd the URL).
+  it("ignores an un-interpolated DEFAULT_ENVIRONMENT placeholder (treats it as unset)", () => {
+    loadConfig(env({ AZURE_CLIENT_ID: "x", DEFAULT_ENVIRONMENT: "${user_config.default_environment}" })).fold(
+      (err) => expect.unreachable(err.message),
+      (cfg) => expect(cfg.defaultEnvironment).toBeUndefined(),
+    )
+  })
+
+  it("ignores placeholders across optional fields, falling back to defaults", () => {
+    loadConfig(
+      env({
+        AZURE_CLIENT_ID: "x",
+        AZURE_AUTH_MODE: "${user_config.azure_auth_mode}",
+        AZURE_TENANT_ID: "${user_config.azure_tenant_id}",
+        FLOW_SCOPES: "${user_config.flow_scopes}",
+        DEFAULT_ENVIRONMENT: "${user_config.default_environment}",
+      }),
+    ).fold(
+      (err) => expect.unreachable(err.message),
+      (cfg) => {
+        expect(cfg.authMode).toBe("interactive")
+        expect(cfg.tenantId).toBe("common")
+        expect(cfg.flowScopes).toEqual(["https://service.flow.microsoft.com/.default"])
+        expect(cfg.defaultEnvironment).toBeUndefined()
+      },
+    )
+  })
+
+  it("treats a placeholder AZURE_CLIENT_ID as missing (clear error, not a bad client id)", () => {
+    expect(leftMessage({ AZURE_CLIENT_ID: "${user_config.azure_client_id}" })).toMatch(/AZURE_CLIENT_ID is required/)
+  })
+
+  it("keeps a real value that merely contains braces", () => {
+    loadConfig(env({ AZURE_CLIENT_ID: "abc${def}", DEFAULT_ENVIRONMENT: "env-${x}-id" })).fold(
+      (err) => expect.unreachable(err.message),
+      (cfg) => {
+        expect(cfg.clientId).toBe("abc${def}")
+        expect(cfg.defaultEnvironment).toBe("env-${x}-id")
+      },
+    )
+  })
 })

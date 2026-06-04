@@ -25,6 +25,24 @@ const expandHome = (p: string): string => {
   return p
 }
 
+/**
+ * True for a manifest placeholder the host left un-interpolated — e.g. Claude Desktop passes the
+ * literal `"${user_config.default_environment}"` as the env value when an optional `.mcpb` field
+ * is left blank (it doesn't drop unset optional vars). Such a value must be treated as absent;
+ * otherwise it leaks into config (e.g. straight into the request path, which 400s).
+ */
+const isUninterpolatedPlaceholder = (value: string): boolean => /^\$\{[^}]*\}$/.test(value.trim())
+
+/** Drop env vars whose value is an un-interpolated `${...}` placeholder so a blank optional
+ *  `.mcpb` field falls back to its default instead of being used literally. */
+const sanitizeEnv = (env: NodeJS.ProcessEnv): NodeJS.ProcessEnv => {
+  const out: NodeJS.ProcessEnv = {}
+  for (const [key, value] of Object.entries(env)) {
+    if (value !== undefined && !isUninterpolatedPlaceholder(value)) out[key] = value
+  }
+  return out
+}
+
 const parseAuthMode = (value: string | undefined): Either<ConfigError, AuthMode> => {
   if (!value || value === "interactive") return Right("interactive")
   if (value === "clientCredentials") return Right("clientCredentials")
@@ -55,7 +73,11 @@ const parsePort = (value: string | undefined): number => {
   return Number.isFinite(n) ? n : 3333
 }
 
-export const loadConfig = (env: NodeJS.ProcessEnv = process.env): Either<ConfigError, ServerConfig> => {
+export const loadConfig = (rawEnv: NodeJS.ProcessEnv = process.env): Either<ConfigError, ServerConfig> => {
+  // A blank optional .mcpb field arrives as the literal "${...}" placeholder (Claude Desktop
+  // doesn't drop unset optional vars); treat those as absent so they fall back to defaults
+  // instead of, e.g., DEFAULT_ENVIRONMENT putting "${user_config.default_environment}" in the URL.
+  const env = sanitizeEnv(rawEnv)
   const clientId = env.AZURE_CLIENT_ID?.trim()
   if (!clientId) {
     return Left(
