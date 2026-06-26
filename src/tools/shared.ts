@@ -4,6 +4,7 @@
  */
 
 import { type Either, Right } from "functype"
+import { z } from "zod"
 
 import type { FlowBackend } from "../backend/index.js"
 import { type AppError, appErrorToThrowable, type FlowApiError } from "../errors.js"
@@ -49,6 +50,39 @@ export const ensureWriteEnabled = (enableWrite: boolean, toolName: string): void
     )
   }
 }
+
+/**
+ * A workflow-definition / connection-references parameter that accepts EITHER a JSON object
+ * OR a JSON string, parsing the string server-side.
+ *
+ * Why a union and not just an object: agents (notably Claude Desktop) frequently fail to emit
+ * a large nested object through a tool's structured arguments — the call gets malformed and the
+ * client falls back to a single `__unparsedToolInput` blob, which then fails validation. Passing
+ * the definition as one JSON *string* is a single scalar the model emits reliably, sidestepping
+ * that path. (Single quotes inside the JSON — e.g. `@parameters('$authentication')` — are valid
+ * JSON and parse fine; they are not the cause of the failures.)
+ */
+export const jsonObjectParam = (description: string) =>
+  z
+    .union([z.record(z.string(), z.unknown()), z.string()])
+    .transform((value, ctx): Record<string, unknown> => {
+      if (typeof value !== "string") return value
+      const parsed = ((): unknown => {
+        try {
+          return JSON.parse(value)
+        } catch (e) {
+          ctx.addIssue({ code: "custom", message: `not valid JSON: ${(e as Error).message}` })
+          return z.NEVER
+        }
+      })()
+      if (parsed === z.NEVER) return {} as Record<string, unknown>
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        ctx.addIssue({ code: "custom", message: "must be a JSON object (got an array or primitive)" })
+        return {} as Record<string, unknown>
+      }
+      return parsed as Record<string, unknown>
+    })
+    .describe(description)
 
 /** Confirmation payload for a successful mutation. */
 export const confirmWrite = (operation: string, details: Record<string, unknown>): string =>

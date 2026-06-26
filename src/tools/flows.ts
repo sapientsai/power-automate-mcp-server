@@ -11,6 +11,7 @@ import {
   confirmWrite,
   DISCLAIMER,
   ensureWriteEnabled,
+  jsonObjectParam,
   type ReadToolOptions,
   renderResult,
   resolveEnvironment,
@@ -150,13 +151,12 @@ export const registerFlowWriteTools = (
     parameters: z.object({
       environment: ENV_PARAM,
       displayName: z.string().describe("Display name for the new flow."),
-      definition: z
-        .record(z.string(), z.unknown())
-        .describe("Workflow definition JSON: $schema, contentVersion, parameters, triggers, actions."),
-      connectionReferences: z
-        .record(z.string(), z.unknown())
-        .optional()
-        .describe("Connection references the definition uses (match get_flow's connectionReferences shape)."),
+      definition: jsonObjectParam(
+        "Workflow definition JSON: $schema, contentVersion, parameters, triggers, actions. Accepts a JSON object or a JSON string.",
+      ),
+      connectionReferences: jsonObjectParam(
+        "Connection references the definition uses (match get_flow's connectionReferences shape). Accepts a JSON object or a JSON string.",
+      ).optional(),
       state: z.enum(["Started", "Stopped"]).optional().describe("Initial state (default Stopped)."),
     }),
     execute: async ({ environment, displayName, definition, connectionReferences, state }) => {
@@ -184,8 +184,12 @@ export const registerFlowWriteTools = (
       environment: ENV_PARAM,
       flow: z.string().describe("Flow GUID name (from list_flows)."),
       displayName: z.string().optional().describe("New display name."),
-      definition: z.record(z.string(), z.unknown()).optional().describe("Replacement workflow definition JSON."),
-      connectionReferences: z.record(z.string(), z.unknown()).optional().describe("Replacement connection references."),
+      definition: jsonObjectParam(
+        "Replacement workflow definition JSON. Accepts a JSON object or a JSON string.",
+      ).optional(),
+      connectionReferences: jsonObjectParam(
+        "Replacement connection references. Accepts a JSON object or a JSON string.",
+      ).optional(),
       state: z.enum(["Started", "Stopped"]).optional().describe("New state."),
     }),
     execute: async ({ environment, flow, displayName, definition, connectionReferences, state }) => {
