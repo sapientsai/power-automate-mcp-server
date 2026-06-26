@@ -8,6 +8,7 @@
  * See ./bin.ts for the CLI/transport entry point.
  */
 
+import { Option } from "functype"
 import {
   createCompositeTelemetry,
   createConsoleTelemetry,
@@ -116,7 +117,7 @@ export const createPowerAutomateServer = (config: ServerConfig): SomaServerInsta
       extraLabels: ["mcp-feedback"],
       provider: createGithubFeedback({
         repo: config.feedbackRepo as `${string}/${string}`,
-        getToken: () => process.env.GITHUB_TOKEN || undefined,
+        getToken: () => Option(process.env.GITHUB_TOKEN || undefined),
       }),
     }),
   )
