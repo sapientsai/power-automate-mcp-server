@@ -31,13 +31,14 @@ export const registerFlowReadTools = (
   server.addTool({
     name: "list_flows",
     description: [
-      "List cloud flows in an environment.",
+      "List / enumerate all cloud flows in an environment — get every flow's GUID, name, and state. The flow inventory / directory.",
+      "START HERE to discover flows: this is the only tool that returns flow GUIDs (ids). Every per-flow tool (get_flow, enable_flow, disable_flow, list_flow_runs, list_flow_owners, update_flow, delete_flow) needs a GUID that ONLY this tool produces — so call this first to find flows.",
       "Returns: array of { name, displayName, state, createdTime, lastModifiedTime, owner }. `name` is the flow GUID used by the other flow tools; `state` is Started/Stopped/Suspended.",
       "Parameters: environment (optional), owner (optional — filter by creator userId/email).",
       DISCLAIMER,
       'Example: list_flows { "owner": "user@contoso.com" }',
     ].join("\n"),
-    annotations: { readOnlyHint: true, title: "List Power Automate flows" },
+    annotations: { readOnlyHint: true, title: "List / enumerate all flows (get flow GUIDs)" },
     parameters: z.object({
       environment: ENV_PARAM,
       owner: z.string().optional().describe("Filter to flows created by this principal (userId or email)."),
