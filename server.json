@@ -6,12 +6,12 @@
     "url": "https://github.com/sapientsai/power-automate-mcp-server",
     "source": "github"
   },
-  "version": "0.2.3",
+  "version": "0.2.4",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "power-automate-mcp-server",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "transport": {
         "type": "stdio"
       },

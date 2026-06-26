@@ -2,7 +2,7 @@
   "manifest_version": "0.2",
   "name": "power-automate-mcp-server",
   "display_name": "Power Automate MCP Server",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Inspect, operate, and author Microsoft Power Automate cloud flows from Claude Desktop.",
   "long_description": "Power Automate MCP Server lets you manage Microsoft Power Automate cloud flows directly from Claude Desktop — and lightly author them too.\n\n**Read / debug (always on):**\n- List environments, flows, and connections (with broken-connection detection)\n- Inspect a flow's full definition (triggers, actions, connection references)\n- List and drill into runs — status, timing, first-failure detail\n- List flow owners\n\n**Operate & author (enable write ops):**\n- Enable / disable flows\n- Cancel / resubmit runs\n- Add / remove owners\n- Create / update / delete flows (programmatic authoring)\n\n**How it works:**\n- Per-user **device-code sign-in** that surfaces the code right in the chat — no terminal.\n- Targets the `api.flow.microsoft.com` management surface (sees personal \"My Flows\"; no Premium license needed).\n- Read-only by default; mutating tools are gated behind a single setting, and delete requires explicit confirmation.\n\n**Setup:** you supply your own Azure app registration (multi-tenant public client with the Microsoft Flow Service delegated permission and public-client flows enabled) — see the README.",
   "author": {
@@ -19,7 +19,10 @@
     "entry_point": "dist/bin.js",
     "mcp_config": {
       "command": "node",
-      "args": ["${__dirname}/dist/bin.js", "--stdio"],
+      "args": [
+        "${__dirname}/dist/bin.js",
+        "--stdio"
+      ],
       "env": {
         "AZURE_CLIENT_ID": "${user_config.azure_client_id}",
         "AZURE_TENANT_ID": "${user_config.azure_tenant_id}",
@@ -101,7 +104,15 @@
       "description": "Report a bug or API drift to the maintainers"
     }
   ],
-  "keywords": ["power-automate", "microsoft-flow", "power-platform", "azure", "mcp", "flows", "automation"],
+  "keywords": [
+    "power-automate",
+    "microsoft-flow",
+    "power-platform",
+    "azure",
+    "mcp",
+    "flows",
+    "automation"
+  ],
   "license": "MIT",
   "user_config": {
     "azure_client_id": {
