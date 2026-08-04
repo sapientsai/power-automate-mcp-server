@@ -64,19 +64,19 @@
     "prepublishOnly": "pnpm check:versions && pnpm validate"
   },
   "dependencies": {
-    "@azure/msal-node": "^5.3.0",
+    "@azure/msal-node": "^5.4.3",
     "dotenv": "^17.4.2",
-    "functype": "^1.5.0",
-    "somamcp": "^1.0.15",
+    "functype": "^1.8.0",
+    "somamcp": "^1.1.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/node": "^24.13.2",
-    "ts-builds": "^3.2.1",
-    "tsdown": "^0.22.3",
-    "tsx": "^4.22.4",
+    "@types/node": "^24.13.3",
+    "ts-builds": "^3.2.3",
+    "tsdown": "^0.22.14",
+    "tsx": "^4.23.5",
     "unrun": "^0.3.1"
   },
   "prettier": "ts-builds/prettier",
-  "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b"
+  "packageManager": "pnpm@11.20.0+sha512.9a6f330a95b66446ea088faf1521405a8a01f07fde7124cc9958dfed52d4bb436737e65b08f85f37b46fcba375092558ac51262b816844b22f63406ed166bfee"
 }
