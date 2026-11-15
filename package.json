@@ -12,7 +12,7 @@
     "azure",
     "typescript"
   ],
-  "author": "jordan.burke@gmail.com",
+  "author": "Jordan Burke <jordan.burke@gmail.com>",
   "license": "MIT",
   "mcpName": "io.github.sapientsai/power-automate-mcp-server",
   "homepage": "https://github.com/sapientsai/power-automate-mcp-server",
