@@ -192,6 +192,7 @@ curl -s http://localhost:3333/health
 
 ```bash
 pnpm validate        # format + lint + typecheck + test + build
+pnpm run ci          # validate's checks without fixing, as CI runs them (type `run`: `pnpm ci` is a clean install)
 pnpm test            # vitest (unit)
 pnpm dev             # http transport, watch
 pnpm dev:stdio       # stdio transport, watch

@@ -3,10 +3,11 @@
 # ── Build stage ───────────────────────────────────────────────────────
 FROM node:24-alpine AS builder
 
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+# corepack activates the pnpm version pinned in package.json's packageManager
+RUN corepack enable
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
@@ -18,10 +19,11 @@ FROM node:24-alpine AS production
 ARG GIT_HASH=""
 ENV GIT_HASH=${GIT_HASH}
 
-RUN corepack enable && corepack prepare pnpm@10.33.0 --activate
+# corepack activates the pnpm version pinned in package.json's packageManager
+RUN corepack enable
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
